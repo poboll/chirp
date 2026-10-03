@@ -3,210 +3,315 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>chirp. 报信小鸟</title>
-<meta name="description" content="macOS 菜单栏小鸟：把你正在使用的软件实时报到博客上。纯 AppKit、零依赖、开机自启。">
+<title>chirp. — 报信小鸟</title>
+<meta name="description" content="macOS 菜单栏小鸟：把你正在使用的软件实时报到博客上。纯 AppKit、零依赖、200KB、开机自启。">
+<link rel="icon" href="assets/icon.png">
 <style>
   :root {
-    --paper: #faf7f0;
-    --ink: #26301f;
-    --green: #3d6b35;
-    --green-soft: #6a8f5f;
-    --line: #dcd6c8;
-    --card: #ffffff;
-    --mono: ui-monospace, "SF Mono", Menlo, monospace;
+    --bg: #0a0e0b;
+    --bg-raise: #101611;
+    --line: rgba(126, 231, 135, .14);
+    --line-soft: rgba(255,255,255,.07);
+    --ink: #e7ede6;
+    --ink-dim: #9aa79a;
+    --ink-faint: #67735f;
+    --green: #7ee787;
+    --green-deep: #3fb950;
+    --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
+    --sans: -apple-system, "SF Pro Display", "PingFang SC", "Segoe UI", sans-serif;
   }
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html { scroll-behavior:smooth; }
   body {
-    background: var(--paper);
-    color: var(--ink);
-    font-family: -apple-system, "SF Pro Text", "PingFang SC", "Segoe UI", sans-serif;
-    line-height: 1.75;
-    -webkit-font-smoothing: antialiased;
+    background: var(--bg); color: var(--ink);
+    font-family: var(--sans); line-height: 1.7;
+    -webkit-font-smoothing: antialiased; overflow-x: hidden;
   }
-  .wrap { max-width: 860px; margin: 0 auto; padding: 0 24px; }
-  a { color: var(--green); text-decoration: none; border-bottom: 1px solid var(--green-soft); }
-  a:hover { background: #eef2e6; }
+  ::selection { background: rgba(126,231,135,.25); }
+  a { color: var(--green); text-decoration: none; }
+  .wrap { max-width: 940px; margin: 0 auto; padding: 0 28px; }
+  .mono { font-family: var(--mono); }
 
-  header { border-bottom: 1px solid var(--line); padding: 18px 0; }
-  header .wrap { display: flex; justify-content: space-between; align-items: center; }
-  .brand { font-family: var(--mono); font-weight: 700; font-size: 17px; color: var(--ink); border: none; }
-  .brand img { width: 22px; height: 22px; vertical-align: -5px; margin-right: 8px; }
-  header nav a { font-size: 14px; margin-left: 18px; border: none; }
-
-  .hero { text-align: center; padding: 72px 0 48px; }
-  .hero img.icon { width: 128px; height: 128px; border-radius: 28px; box-shadow: 0 12px 32px rgba(61,107,53,.22); }
-  .hero h1 { font-size: 44px; letter-spacing: -1px; margin: 28px 0 6px; font-weight: 800; }
-  .hero h1 .dot { color: var(--green); }
-  .hero .sub { font-size: 18px; color: #5a6350; }
-  .hero p.tag { margin-top: 14px; font-size: 15px; color: #7a8271; }
-  .btns { margin-top: 30px; display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+  /* ---------- nav ---------- */
+  nav {
+    position: sticky; top: 0; z-index: 50;
+    background: rgba(10,14,11,.72); backdrop-filter: saturate(1.6) blur(14px);
+    border-bottom: 1px solid var(--line-soft);
+  }
+  nav .wrap { display:flex; align-items:center; gap: 14px; height: 60px; }
+  .logo { display:flex; align-items:center; gap:10px; color:var(--ink); font-weight:700; font-size:15.5px; }
+  .logo img { width:26px; height:26px; border-radius:7px; box-shadow:0 0 0 1px var(--line); }
+  .logo .dot { color: var(--green); }
+  nav .spacer { flex:1; }
+  nav a.navlink { color: var(--ink-dim); font-size:13.5px; padding:6px 10px; border-radius:8px; }
+  nav a.navlink:hover { color:var(--ink); background:rgba(255,255,255,.05); }
   .btn {
-    display: inline-block; padding: 11px 26px; border-radius: 10px;
-    font-size: 15px; font-weight: 600; border: none; transition: transform .12s;
+    display:inline-flex; align-items:center; gap:8px;
+    padding: 8px 16px; border-radius: 10px; font-size:13.5px; font-weight:600;
+    border: 1px solid transparent; cursor:pointer; transition: all .15s ease;
   }
-  .btn:hover { transform: translateY(-1px); }
-  .btn.primary { background: var(--green); color: #fff; }
-  .btn.primary:hover { background: #335c2c; }
-  .btn.ghost { background: transparent; color: var(--green); border: 1px solid var(--green-soft); }
-  .btn.ghost:hover { background: #eef2e6; }
-
-  section { padding: 40px 0; border-top: 1px solid var(--line); }
-  h2 { font-size: 22px; margin-bottom: 20px; }
-  h2 .no { font-family: var(--mono); color: var(--green-soft); margin-right: 10px; font-weight: 400; }
-
-  .shot-fig { text-align: center; }
-  .shot-fig img {
-    max-width: 100%; width: 520px; border-radius: 14px;
-    box-shadow: 0 10px 40px rgba(38,48,31,.14); border: 1px solid var(--line);
+  .btn.primary {
+    background: linear-gradient(180deg, #2ea04326, #2ea04312);
+    border-color: rgba(63,185,80,.45); color: var(--green);
+    box-shadow: 0 0 24px rgba(63,185,80,.12), inset 0 1px 0 rgba(255,255,255,.06);
   }
-  .shot-fig figcaption { font-size: 13px; color: #8a917f; margin-top: 12px; }
+  .btn.primary:hover { border-color: rgba(126,231,135,.8); box-shadow: 0 0 32px rgba(63,185,80,.25), inset 0 1px 0 rgba(255,255,255,.08); }
 
-  .feats { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; }
-  .feat { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; }
-  .feat b { display: block; font-size: 15px; margin-bottom: 6px; }
-  .feat span { font-size: 13.5px; color: #5a6350; }
+  /* ---------- hero ---------- */
+  .hero { position:relative; text-align:center; padding: 96px 0 72px; }
+  .hero::before {
+    content:""; position:absolute; inset:-40% -20% auto; height:130%;
+    background:
+      radial-gradient(42% 55% at 50% 32%, rgba(63,185,80,.16), transparent 70%),
+      radial-gradient(30% 40% at 68% 18%, rgba(126,231,135,.08), transparent 70%);
+    pointer-events:none;
+  }
+  .hero > * { position:relative; }
+  .hero .bird-wrap { position:relative; width:128px; margin: 0 auto 26px; }
+  .hero .bird-wrap::after {
+    content:""; position:absolute; inset:-34%;
+    background: radial-gradient(50% 50%, rgba(126,231,135,.22), transparent 72%);
+    z-index:-1; filter: blur(6px);
+  }
+  .hero img.icon {
+    width:128px; height:128px; border-radius: 30px;
+    box-shadow: 0 0 0 1px var(--line), 0 24px 64px -16px rgba(63,185,80,.4);
+  }
+  .hero h1 {
+    font-size: clamp(40px, 7vw, 64px); font-weight: 800; letter-spacing: -2px;
+    line-height: 1.08; margin-bottom: 14px;
+  }
+  .hero h1 em {
+    font-style: normal;
+    background: linear-gradient(120deg, #d0ffb8 10%, var(--green) 55%, #2ea043 90%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .hero .sub { font-size: 18px; color: var(--ink-dim); max-width: 560px; margin: 0 auto; }
+  .hero .sub b { color: var(--ink); font-weight: 600; }
+
+  .badges { display:flex; gap:8px; justify-content:center; flex-wrap:wrap; margin: 26px 0 30px; }
+  .badge {
+    display:inline-flex; align-items:center; gap:6px;
+    font-family: var(--mono); font-size: 11px; line-height: 1;
+    padding: 5px 9px; border-radius: 5px;
+    background: var(--bg-raise); border: 1px solid var(--line-soft); color: var(--ink-dim);
+  }
+  .badge .b-dot { width:6px; height:6px; border-radius:50%; background: var(--green-deep); box-shadow: 0 0 8px var(--green-deep); }
+  .badge b { color: var(--ink); font-weight:600; }
+
+  .cta { display:flex; gap:12px; justify-content:center; flex-wrap:wrap; }
+  .btn.big { padding: 12px 24px; font-size: 14.5px; border-radius: 12px; }
+  .btn.ghost { border-color: var(--line-soft); color: var(--ink-dim); }
+  .btn.ghost:hover { color: var(--ink); border-color: var(--line); }
+
+  /* ---------- screenshot ---------- */
+  .shot { padding: 10px 0 84px; }
+  .window {
+    border-radius: 16px; overflow:hidden;
+    border: 1px solid var(--line-soft);
+    background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,0));
+    box-shadow: 0 40px 120px -40px rgba(0,0,0,.8), 0 0 60px -30px rgba(63,185,80,.3);
+  }
+  .window .bar {
+    display:flex; align-items:center; gap:7px; padding: 11px 16px;
+    border-bottom: 1px solid var(--line-soft); background: rgba(255,255,255,.02);
+  }
+  .window .bar i { width:11px; height:11px; border-radius:50%; display:block; }
+  .window .bar i:nth-child(1){ background:#ff5f57; } .window .bar i:nth-child(2){ background:#febc2e; } .window .bar i:nth-child(3){ background:#28c840; }
+  .window .bar span { flex:1; text-align:center; font-family:var(--mono); font-size:11.5px; color:var(--ink-faint); }
+  .window img { display:block; width:100%; }
+
+  /* ---------- sections ---------- */
+  section.block { padding: 76px 0; border-top: 1px solid var(--line-soft); position:relative; }
+  .eyebrow {
+    font-family: var(--mono); font-size: 12px; letter-spacing: 2px;
+    color: var(--green); text-transform: uppercase; margin-bottom: 10px;
+  }
+  h2 { font-size: 30px; font-weight: 750; letter-spacing: -1px; margin-bottom: 12px; }
+  .lead { color: var(--ink-dim); font-size: 15.5px; max-width: 620px; margin-bottom: 34px; }
+
+  .grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 14px; }
+  .card {
+    background: var(--bg-raise); border: 1px solid var(--line-soft); border-radius: 14px;
+    padding: 22px 24px; transition: border-color .2s ease, transform .2s ease;
+  }
+  .card:hover { border-color: var(--line); transform: translateY(-2px); }
+  .card .k { font-family: var(--mono); font-size: 11px; color: var(--green); opacity:.85; }
+  .card h3 { font-size: 16.5px; margin: 6px 0 8px; }
+  .card p { font-size: 13.5px; color: var(--ink-dim); }
 
   .flow {
-    font-family: var(--mono); font-size: 13px; line-height: 1.9;
-    background: #21301e; color: #d9e8cf; border-radius: 12px;
-    padding: 22px 26px; overflow-x: auto; white-space: pre;
+    font-family: var(--mono); font-size: 12.5px; line-height: 1.95;
+    background: #0d120e; border: 1px solid var(--line-soft); border-radius: 14px;
+    padding: 24px 28px; overflow-x: auto; white-space: pre; color: #b7c4b4;
   }
-  .flow .hl { color: #a8d18a; }
+  .flow .hl { color: var(--green); }
+  .flow .dim { color: var(--ink-faint); }
 
-  .steps { display: grid; gap: 16px; }
-  .step { display: flex; gap: 18px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 20px 22px; }
+  /* steps */
+  .steps { display:grid; gap: 14px; counter-reset: step; }
+  .step {
+    display:grid; grid-template-columns: 44px 1fr; gap: 18px;
+    background: var(--bg-raise); border: 1px solid var(--line-soft);
+    border-radius: 14px; padding: 22px 24px;
+  }
   .step .n {
-    flex: none; width: 34px; height: 34px; border-radius: 50%;
-    background: var(--green); color: #fff; font-weight: 700;
-    display: flex; align-items: center; justify-content: center; font-size: 15px;
+    width: 34px; height: 34px; border-radius: 10px; margin-top: 2px;
+    display:flex; align-items:center; justify-content:center;
+    background: linear-gradient(180deg, rgba(126,231,135,.16), rgba(63,185,80,.07));
+    border: 1px solid rgba(63,185,80,.4); color: var(--green);
+    font-family: var(--mono); font-weight: 700; font-size: 14px;
   }
   .step h3 { font-size: 16px; margin-bottom: 8px; }
-  .step p { font-size: 14px; color: #5a6350; margin-bottom: 10px; }
-  pre.code {
-    font-family: var(--mono); font-size: 12.5px; line-height: 1.7;
-    background: #f2efe5; border: 1px solid var(--line); border-radius: 8px;
-    padding: 12px 16px; overflow-x: auto; color: #33402a;
+  .step p { font-size: 13.5px; color: var(--ink-dim); margin-bottom: 12px; }
+  .term {
+    font-family: var(--mono); font-size: 12.5px; line-height: 1.75;
+    background: #0d120e; border: 1px solid var(--line-soft); border-radius: 10px;
+    padding: 14px 18px; overflow-x: auto; color: #cdd8ca;
   }
-  pre.code .c { color: #8a917f; }
-  table { border-collapse: collapse; width: 100%; font-size: 13.5px; background: var(--card); border-radius: 10px; overflow: hidden; }
-  th, td { border: 1px solid var(--line); padding: 8px 12px; text-align: left; vertical-align: top; }
-  th { background: #f2efe5; font-size: 13px; }
-  td code, p code { font-family: var(--mono); font-size: 12.5px; background: #f2efe5; padding: 1px 5px; border-radius: 4px; }
+  .term .p { color: var(--green); user-select: none; }
+  .term .c { color: var(--ink-faint); }
 
-  footer { border-top: 1px solid var(--line); padding: 26px 0 40px; font-size: 13px; color: #8a917f; }
-  footer .wrap { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-  @media (max-width: 600px) { .hero h1 { font-size: 34px; } }
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+  th, td { border: 1px solid var(--line-soft); padding: 10px 14px; text-align: left; vertical-align: top; }
+  th { background: rgba(255,255,255,.025); font-family: var(--mono); font-size: 12px; color: var(--ink-dim); font-weight: 600; }
+  td { color: var(--ink-dim); }
+  td:first-child code { color: var(--green); }
+  code { font-family: var(--mono); font-size: 12.5px; background: rgba(126,231,135,.07); padding: 2px 6px; border-radius: 5px; }
+
+  footer { border-top: 1px solid var(--line-soft); padding: 34px 0 46px; font-size: 13px; color: var(--ink-faint); }
+  footer .wrap { display:flex; justify-content:space-between; gap: 14px; flex-wrap:wrap; }
+  footer a { color: var(--ink-dim); } footer a:hover { color: var(--green); }
+
+  @media (max-width: 640px) {
+    .hero { padding: 72px 0 56px; }
+    .step { grid-template-columns: 1fr; }
+  }
 </style>
 </head>
 <body>
 
-<header>
+<nav>
   <div class="wrap">
-    <a class="brand" href="./"><img src="assets/icon.png" alt="chirp.">chirp<span class="dot">.</span> 报信小鸟</a>
-    <nav>
-      <a href="https://github.com/poboll/chirp" target="_blank" rel="noopener">GitHub</a>
-      <a href="https://github.com/poboll/app-icons" target="_blank" rel="noopener">app-icons</a>
-    </nav>
+    <a class="logo" href="#top"><img src="assets/icon.png" alt="">chirp<span class="dot">.</span></a>
+    <span class="spacer"></span>
+    <a class="navlink" href="#features">特性</a>
+    <a class="navlink" href="#usage">安装</a>
+    <a class="navlink" href="https://github.com/poboll/app-icons" target="_blank" rel="noopener">app-icons</a>
+    <a class="btn primary" href="https://github.com/poboll/chirp/releases/latest" target="_blank" rel="noopener">
+      <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M.99 9.14a.94.94 0 0 1 0-1.33l.7-.7a.94.94 0 0 1 1.33 0l2.9 2.9a.47.47 0 0 0 .8-.33V2.36a.94.94 0 0 1 .94-.94h.68a.94.94 0 0 1 .94.94v7.32a.47.47 0 0 0 .8.33l2.9-2.9a.94.94 0 0 1 1.33 0l.7.7a.94.94 0 0 1 0 1.33l-6.1 6.1a.94.94 0 0 1-1.33 0z" transform="rotate(180 8 8)"/></svg>
+      下载
+    </a>
+  </div>
+</nav>
+
+<header class="hero" id="top">
+  <div class="wrap">
+    <div class="bird-wrap"><img class="icon" src="assets/icon.png" alt="chirp. 图标"></div>
+    <h1>菜单栏的<br><em>报信小鸟</em></h1>
+    <p class="sub">看着你正在用什么软件，叽叽喳喳地告诉博客——访客打开页面，导航栏上就是一行实时的「正在使用 XX」。</p>
+    <div class="badges">
+      <span class="badge"><span class="b-dot"></span>release <b>v1.1.0</b></span>
+      <span class="badge">swift <b>AppKit</b></span>
+      <span class="badge">deps <b>zero</b></span>
+      <span class="badge">size <b>~200KB</b></span>
+      <span class="badge">license <b>MIT</b></span>
+    </div>
+    <div class="cta">
+      <a class="btn primary big" href="https://github.com/poboll/chirp/releases/latest" target="_blank" rel="noopener">下载 Release ↓</a>
+      <a class="btn ghost big" href="#usage">一键安装 ↓</a>
+    </div>
   </div>
 </header>
 
-<div class="hero wrap">
-  <img class="icon" src="assets/icon.png" alt="chirp. 图标">
-  <h1>chirp<span class="dot">.</span> 报信小鸟</h1>
-  <div class="sub">一只住在菜单栏的小鸟，把你正在用的软件报到博客上。</div>
-  <p class="tag">纯 AppKit · 零第三方依赖 · release 二进制约 200KB · 开机自启</p>
-  <div class="btns">
-    <a class="btn primary" href="https://github.com/poboll/chirp" target="_blank" rel="noopener">GitHub 仓库 ↗</a>
-    <a class="btn ghost" href="#usage">使用方式 ↓</a>
+<div class="shot wrap">
+  <div class="window">
+    <div class="bar"><i></i><i></i><i></i><span>chirp. — 菜单栏</span></div>
+    <img src="assets/menu-shot.png" alt="chirp. 菜单栏菜单截图">
   </div>
 </div>
 
-<section id="screenshot">
-  <div class="wrap shot-fig">
-    <h2><span class="no">01</span>它长这样</h2>
-    <img src="assets/menu-shot.png" alt="chirp. 菜单截图" width="520">
-    <figcaption>点一下菜单栏的小鸟：当前应用 / 博客显示 / 上次上报结果一目了然，还能暂停、刷新、打开配置。</figcaption>
+<section class="block" id="how">
+  <div class="wrap">
+    <div class="eyebrow">How it works</div>
+    <h2>一只小鸟的工作</h2>
+    <p class="lead">防抖、心跳、回落，全部自动。你唯一要做的是装上它、填两行配置。</p>
+    <div class="flow"><span class="dim">切换应用 ──防抖 3s──▶</span> POST <span class="hl">/api/v3/fn/ps/update</span>  <span class="dim">{ key, process: { name, iconUrl? } }</span>
+                                │
+                                ▼
+                mx-space snippet 缓存 5 分钟 <span class="dim">+</span> WebSocket 广播
+                                │
+                                ▼
+             <span class="hl">博客导航栏「正在使用 XX」</span> <span class="dim">（Shiro / Yohaku 主题）</span></div>
   </div>
 </section>
 
-<section id="how">
+<section class="block" id="features">
   <div class="wrap">
-    <h2><span class="no">02</span>它做什么</h2>
-    <div class="flow">切换应用 ──防抖 3s──▶ POST <span class="hl">/api/v3/fn/ps/update</span>
-                        {key, timestamp, process: {name, iconUrl?}}
-                              │
-                              ▼
-              mx-space snippet 缓存 5 分钟 + WebSocket 广播
-                              │
-                              ▼
-           博客导航栏「正在使用 XX」（Shiro / Yohaku 主题）</div>
-    <br>
-    <div class="feats">
-      <div class="feat"><b>轻</b><span>纯 AppKit + Swift Package，零第三方依赖，无 Dock 图标，只住菜单栏。</span></div>
-      <div class="feat"><b>省</b><span>只在应用切换时上报（3 秒防抖），每 4 分钟心跳续期，失败时小鸟变红。</span></div>
-      <div class="feat"><b>稳</b><span>睡眠唤醒自动补报，LaunchAgent <code>KeepAlive</code> 常驻，配置损坏绝不覆盖。</span></div>
-      <div class="feat"><b>图标三层</b><span>主题内置映射 → <a href="https://github.com/poboll/app-icons" target="_blank" rel="noopener">app-icons</a> CDN → data URI 兜底，新装软件零操作。</span></div>
+    <div class="eyebrow">Features</div>
+    <h2>为「只报信」而生</h2>
+    <p class="lead">没有 Slack、没有 Discord、没有 S3。上游 ProcessReporter 的功能砍到只剩一件事，换来的是极小与极稳。</p>
+    <div class="grid">
+      <div class="card"><div class="k">01</div><h3>轻</h3><p>纯 AppKit + Swift Package，零第三方依赖，release 二进制约 200KB；LSUIElement 无 Dock 图标，只住菜单栏。</p></div>
+      <div class="card"><div class="k">02</div><h3>省</h3><p>只在应用切换时上报（3 秒防抖），每 4 分钟心跳续期；失败时小鸟变红，睡眠唤醒自动补报。</p></div>
+      <div class="card"><div class="k">03</div><h3>稳</h3><p>LaunchAgent KeepAlive 常驻；配置损坏绝不覆盖，只弹窗提醒。ad-hoc 签名，Release 下载即用。</p></div>
+      <div class="card"><div class="k">04</div><h3>有图标</h3><p>主题内置映射 → <a href="https://github.com/poboll/app-icons" target="_blank" rel="noopener">app-icons</a> CDN → data URI 兜底，三层自动回落，新装软件零操作。</p></div>
     </div>
   </div>
 </section>
 
-<section id="usage">
+<section class="block" id="usage">
   <div class="wrap">
-    <h2><span class="no">03</span>使用方式</h2>
+    <div class="eyebrow">Install</div>
+    <h2>一分钟装好</h2>
+    <p class="lead">macOS 13+（Apple Silicon）。先在 mx-space 后台备好 <code>ps/update</code> fn snippet（Shiro 生态自带）。</p>
     <div class="steps">
       <div class="step">
         <div class="n">1</div>
         <div>
-          <h3>克隆并构建</h3>
-          <p>macOS 13+，只需 Xcode Command Line Tools：</p>
-<pre class="code">git clone https://github.com/poboll/chirp.git
-cd chirp
-sh scripts/build-app.sh            <span class="c"># 构建 + 组装 + 安装到 /Applications</span></pre>
+          <h3>一键安装</h3>
+          <p>下载最新 Release、装进 /Applications、配置开机自启，一条命令：</p>
+          <div class="term"><span class="p">$</span> curl -fsSL https://raw.githubusercontent.com/poboll/chirp/main/scripts/install.sh | bash</div>
         </div>
       </div>
       <div class="step">
         <div class="n">2</div>
         <div>
-          <h3>写配置</h3>
-          <p>准备 mx-space 的 <code>ps/update</code> fn snippet（Shiro 官方生态自带，主题配置 <code>module.activity.endpoint</code>），然后：</p>
-<pre class="code">mkdir -p ~/.config/chirp
-cat &gt; ~/.config/chirp/config.json &lt;&lt;'EOF'
-{
-  "endpoint": "https://your-blog.example.com/api/v3/fn/ps/update",
-  "key": "与 snippet 一致的密钥",
-  "debounceSeconds": 3,
-  "heartbeatSeconds": 240
-}
-EOF
-chmod 600 ~/.config/chirp/config.json</pre>
+          <h3>注入配置（可选，无人值守）</h3>
+          <p>密钥只写进本机 <code>~/.config/chirp/config.json</code>（权限 600），不经过 GitHub：</p>
+          <div class="term"><span class="p">$</span> bash install.sh \
+    --endpoint <span class="c">https://your-blog.example.com/api/v3/fn/ps/update</span> \
+    --key <span class="c">与 snippet 一致的密钥</span></div>
         </div>
       </div>
       <div class="step">
         <div class="n">3</div>
         <div>
-          <h3>设为开机自启</h3>
-          <p>安装 LaunchAgent 并立即运行，菜单栏出现小鸟即成功：</p>
-<pre class="code">sh scripts/install-launch-agent.sh    <span class="c"># 开机自启动 + 立即运行</span></pre>
+          <h3>或者：源码构建</h3>
+          <p>克隆仓库自己动手，两行：</p>
+          <div class="term"><span class="p">$</span> sh scripts/build-app.sh            <span class="c"># 构建 + 安装</span>
+<span class="p">$</span> sh scripts/install-launch-agent.sh <span class="c"># 开机自启</span></div>
         </div>
       </div>
     </div>
 
-    <h2 style="margin-top:36px"><span class="no">04</span>配置项</h2>
+    <div class="eyebrow" style="margin-top:48px">Config</div>
+    <h2 style="font-size:24px">配置项</h2>
     <table>
       <tr><th>字段</th><th>默认</th><th>说明</th></tr>
       <tr><td><code>endpoint</code></td><td>必填</td><td><code>ps/update</code> fn snippet 的完整地址</td></tr>
-      <tr><td><code>key</code></td><td>必填</td><td>与 snippet 一致的密钥（文件权限请保持 600）</td></tr>
-      <tr><td><code>debounceSeconds</code></td><td><code>3</code></td><td>应用切换防抖，避免频繁切换时刷屏</td></tr>
-      <tr><td><code>heartbeatSeconds</code></td><td><code>240</code></td><td>心跳续期间隔（服务端缓存 5 分钟，需小于它）</td></tr>
-      <tr><td><code>iconManifestUrl</code></td><td>app-icons CDN</td><td>应用名 → 图标的映射清单，每日自动刷新</td></tr>
-      <tr><td><code>iconBase</code></td><td>app-icons CDN</td><td>图标 URL 前缀；未命中时自动回落 data URI</td></tr>
+      <tr><td><code>key</code></td><td>必填</td><td>与 snippet 一致的密钥（文件权限保持 600）</td></tr>
+      <tr><td><code>debounceSeconds</code></td><td><code>3</code></td><td>应用切换防抖，避免频繁切换刷屏</td></tr>
+      <tr><td><code>heartbeatSeconds</code></td><td><code>240</code></td><td>心跳续期间隔（服务端缓存 5 分钟，须小于它）</td></tr>
+      <tr><td><code>iconManifestUrl</code></td><td>app-icons CDN</td><td>应用名 → 图标映射清单，每日自动刷新</td></tr>
+      <tr><td><code>iconBase</code></td><td>app-icons CDN</td><td>图标 URL 前缀；未命中自动回落 data URI</td></tr>
     </table>
   </div>
 </section>
 
 <footer>
   <div class="wrap">
-    <div>chirp. —— 灵感来自 Innei 的 <a href="https://github.com/Innei/ProcessReporter" target="_blank" rel="noopener">ProcessReporter</a>，MIT License.</div>
+    <div>chirp. — 灵感来自 Innei 的 <a href="https://github.com/Innei/ProcessReporter" target="_blank" rel="noopener">ProcessReporter</a> · MIT</div>
     <div><a href="https://github.com/poboll" target="_blank" rel="noopener">poboll</a> · <a href="https://blog.caiths.com" target="_blank" rel="noopener">blog.caiths.com</a></div>
   </div>
 </footer>
