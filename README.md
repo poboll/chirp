@@ -1,8 +1,21 @@
+<div align="center">
+
+<img src="assets/icon.png" width="108" alt="chirp. icon">
+
 # chirp.
 
-> 报信小鸟 🐦 —— 把「正在使用的软件」实时汇报给你的博客。
+**报信小鸟** —— 把「正在使用的软件」实时汇报给你的博客。
 
-![icon](assets/icon.png)
+[![Release](https://img.shields.io/github/v/release/poboll/chirp?style=flat-square&label=Release)](https://github.com/poboll/chirp/releases)
+[![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)](LICENSE)
+[![Swift](https://img.shields.io/badge/Swift-5.9%20·%20AppKit-orange?style=flat-square)](Package.swift)
+[![macOS](https://img.shields.io/badge/macOS-13%2B-silver?style=flat-square)](https://poboll.github.io/chirp/)
+
+[官网](https://poboll.github.io/chirp/) · [下载 Release](https://github.com/poboll/chirp/releases/latest)
+
+</div>
+
+---
 
 `chirp.` 是一个 macOS 菜单栏应用：看着你正在用什么软件，叽叽喳喳地告诉博客。访客打开你的页面，导航栏上就会显示「正在使用 Xcode」这样的实时状态。
 
@@ -31,8 +44,23 @@
 
 ## 使用
 
-1. 准备 mx-space 的 `ps/update` fn snippet（Shiro 官方生态自带，主题配置 `module.activity.endpoint`）
-2. 配置 `~/.config/chirp/config.json`（权限 600）：
+### 方式一：一键安装（推荐）
+
+需要 macOS 13+（Apple Silicon）。先准备好 mx-space 的 `ps/update` fn snippet（Shiro 官方生态自带，主题配置 `module.activity.endpoint`）：
+
+```bash
+# 交互式：装好后点菜单栏小鸟 → 打开配置文件（⌘,）填 endpoint 和 key
+curl -fsSL https://raw.githubusercontent.com/poboll/chirp/main/scripts/install.sh | bash
+
+# 无人值守：配置以参数注入（密钥只落本机 ~/.config/chirp/config.json，权限 600）
+bash install.sh --endpoint https://your-blog.example.com/api/v3/fn/ps/update --key YOUR_KEY
+```
+
+安装脚本会：下载最新 Release → 装 `/Applications` → 写配置（若给了参数）→ 配置开机自启并立即启动。
+
+### 方式二：源码构建
+
+1. 配置 `~/.config/chirp/config.json`（权限 600）：
 
 ```json
 {
@@ -43,7 +71,7 @@
 }
 ```
 
-3. 构建安装：
+2. 构建安装：
 
 ```bash
 sh scripts/build-app.sh            # 构建 + 组装 + 安装到 /Applications

@@ -45,12 +45,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         if let button = statusItem.button {
-            let cfg = NSImage.SymbolConfiguration(pointSize: 15, weight: .medium)
+            // 菜栏系统图标的视觉密度：12pt 偏细弱、15pt 明显偏大，
+            // 13pt medium 与 Spotlight/控制中心等邻居协调
+            let cfg = NSImage.SymbolConfiguration(pointSize: 13, weight: .medium)
             let icon = NSImage(systemSymbolName: "bird.fill", accessibilityDescription: "chirp")?
                 .withSymbolConfiguration(cfg)
             icon?.isTemplate = true
             button.image = icon
-            button.imageScaling = .scaleProportionallyUpOrDown
+            button.imageScaling = .scaleProportionallyDown
         }
         rebuildMenu()
 

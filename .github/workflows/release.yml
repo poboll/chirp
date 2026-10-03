@@ -1,0 +1,28 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 构建 .app 并打包 zip
+        env:
+          CHIRP_VERSION: ${{ github.ref_name }}
+        run: sh scripts/build-app.sh --dist
+
+      - name: 发布 Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" \
+            --title "chirp. ${GITHUB_REF_NAME}" \
+            --generate-notes \
+            dist/*.zip dist/*.sha256
