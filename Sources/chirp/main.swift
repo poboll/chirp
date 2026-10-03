@@ -78,7 +78,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func reportNow(appName: String, force: Bool = false) {
         guard !paused else { return }
         currentApp = appName
-        reporter.report(appName: appName, force: force) { [weak self] ok in
+        let icon = observer.frontmostIconBase64
+        reporter.report(appName: appName, iconBase64: icon, force: force) { [weak self] ok in
             guard let self else { return }
             let formatter = DateFormatter()
             formatter.dateFormat = "HH:mm:ss"

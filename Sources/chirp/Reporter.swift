@@ -23,6 +23,7 @@ final class Reporter {
         struct Process: Codable {
             var name: String
             var description: String?
+            var iconBase64: String?
         }
         var process: Process
         var key: String
@@ -30,7 +31,7 @@ final class Reporter {
     }
 
     /// 上报；同名应用静默跳过（force 用于心跳续期）。
-    func report(appName: String, force: Bool = false, completion: ((Bool) -> Void)? = nil) {
+    func report(appName: String, iconBase64: String? = nil, force: Bool = false, completion: ((Bool) -> Void)? = nil) {
         if !force && appName == lastReportedName {
             completion?(true)
             return
@@ -42,7 +43,7 @@ final class Reporter {
         }
 
         let payload = Payload(
-            process: .init(name: appName, description: nil),
+            process: .init(name: appName, description: nil, iconBase64: iconBase64),
             key: config.key,
             timestamp: UInt(max(0, Date().timeIntervalSince1970))
         )

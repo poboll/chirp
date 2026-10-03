@@ -39,4 +39,23 @@ final class Observer {
     var frontmostName: String? {
         NSWorkspace.shared.frontmostApplication?.localizedName
     }
+
+    /// 前台应用图标 → 64px PNG base64（主题端有图标才会渲染"正在使用"）。
+    var frontmostIconBase64: String? {
+        guard let app = NSWorkspace.shared.frontmostApplication,
+            let icon = app.icon
+        else { return nil }
+        let side: CGFloat = 64
+        let size = NSSize(width: side, height: side)
+        let img = NSImage(size: size)
+        img.lockFocus()
+        icon.draw(in: NSRect(origin: .zero, size: size),
+                  from: .zero, operation: .copy, fraction: 1)
+        img.unlockFocus()
+        guard let tiff = img.tiffRepresentation,
+            let rep = NSBitmapImageRep(data: tiff),
+            let png = rep.representation(using: .png, properties: [:])
+        else { return nil }
+        return png.base64EncodedString()
+    }
 }
