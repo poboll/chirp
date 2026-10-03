@@ -14,12 +14,13 @@
 - **省**：只在应用切换时上报（3 秒防抖），每 4 分钟心跳续期一次（服务端缓存 5 分钟）
 - **稳**：睡眠唤醒自动补报、失败菜单栏图标变红、`KeepAlive` 常驻
 - **静**：`LSUIElement` 无 Dock 图标，只住菜单栏
+- **有图标**：上报带应用图标，三层自动回落（见下），新装软件零操作
 
 ## 工作方式
 
 ```text
 切换应用 ──防抖 3s──▶ POST /api/v3/fn/ps/update
-                        {key, timestamp, process: {name}}
+                        {key, timestamp, process: {name, iconUrl?}}
                               │
                               ▼
               mx-space snippet 缓存 5 分钟 + WebSocket 广播
@@ -49,7 +50,17 @@ sh scripts/build-app.sh            # 构建 + 组装 + 安装到 /Applications
 sh scripts/install-launch-agent.sh # 开机自启动 + 立即运行
 ```
 
-菜单栏的小鸟：单击看「当前应用 / 博客显示 / 上次上报结果」，`⌘P` 暂停，`⌘R` 立即刷新。
+菜单栏的小鸟：单击看「当前应用 / 博客显示 / 上次上报结果」，`⌘P` 暂停，`⌘R` 立即刷新，`⌘,` 打开配置，`⌘H` 使用说明（[官网](https://poboll.github.io/chirp/)）。
+
+## 图标从哪来
+
+前端「正在使用」的应用图标按三层回落，绝大多数应用不需要任何手动配置：
+
+1. **主题内置映射**：Shiro/Yohaku 自带的 [Innei/reporter-assets](https://github.com/Innei/reporter-assets) 名称映射（Xcode、VS Code 等常见开发软件）；
+2. **app-icons CDN**：chirp 按 [poboll/app-icons](https://github.com/poboll/app-icons) 的 `manifest.json` 把应用名映射成 jsdelivr CDN 图标 URL 上报（约 240 个常见 macOS 应用，manifest 每日自动刷新缓存）；
+3. **data URI 兜底**：两者都未命中时，直接抓本机应用图标内嵌上报——新装任何软件立即可用，等它进了 app-icons 仓库后自动切成 CDN 轻量模式。
+
+想扩充 CDN 图标库：`swift scripts/ExportIcons.swift` 导出本机图标与 manifest，往 app-icons 仓库提 PR 即可。
 
 ## 开发
 
