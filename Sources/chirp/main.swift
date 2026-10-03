@@ -147,6 +147,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         pauseItem.target = self
         menu.addItem(pauseItem)
 
+        let configItem = NSMenuItem(
+            title: "打开配置文件",
+            action: #selector(openConfig),
+            keyEquivalent: ","
+        )
+        configItem.target = self
+        menu.addItem(configItem)
+
         let refreshItem = NSMenuItem(
             title: "立即刷新",
             action: #selector(refreshNow),
@@ -183,6 +191,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         } else {
             refreshRemoteState()
         }
+    }
+
+    @objc private func openConfig() {
+        let url = Config.configURL
+        if !FileManager.default.fileExists(atPath: url.path) {
+            _ = Config.writeTemplate()
+        }
+        NSWorkspace.shared.selectFile(url.path, inFileViewerRootedAtPath: url.deletingLastPathComponent().path)
     }
 
     @objc private func quit() {

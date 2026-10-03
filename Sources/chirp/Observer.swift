@@ -56,6 +56,8 @@ final class Observer {
             let rep = NSBitmapImageRep(data: tiff),
             let png = rep.representation(using: .png, properties: [:])
         else { return nil }
-        return png.base64EncodedString()
+        // The theme drops this string straight into <img src>, so it must
+        // be a data URI — raw base64 renders as a broken image.
+        return "data:image/png;base64," + png.base64EncodedString()
     }
 }
