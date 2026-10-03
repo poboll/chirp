@@ -52,8 +52,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         // 启动即上报当前应用
+        log("launched, frontmost=\(observer.frontmostName ?? "nil") paused=\(paused)")
         if let name = observer.frontmostName {
             reportNow(appName: name, force: true)
+        } else {
+            log("frontmost 为空，未上报")
         }
     }
 
@@ -86,6 +89,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self.lastResult = ok
                 ? "已上报 \(formatter.string(from: Date()))"
                 : "失败：\(self.reporter.lastError ?? "未知错误")"
+            log("report \(appName) ok=\(ok) err=\(self.reporter.lastError ?? "-")")
             self.statusItem.button?.contentTintColor = ok ? nil : .systemRed
             self.rebuildMenu()
             if ok {
@@ -198,3 +202,9 @@ let delegate = AppDelegate()
 app.delegate = delegate
 app.setActivationPolicy(.accessory)
 app.run()
+
+
+/// 调试日志直写 stderr（无缓冲，LaunchAgent 下可用 log stream 观察）。
+func log(_ message: String) {
+    FileHandle.standardError.write(Data(("[chirp] " + message + "\n").utf8))
+}
