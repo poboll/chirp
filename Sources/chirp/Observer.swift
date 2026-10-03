@@ -58,6 +58,12 @@ final class Observer {
         NSWorkspace.shared.frontmostApplication?.localizedName
     }
 
+    /// 应用包文件名（如 BaiduNetdisk），作为显示名之外的第二个图标查找键。
+    var frontmostBundleName: String? {
+        guard let url = NSWorkspace.shared.frontmostApplication?.bundleURL else { return nil }
+        return url.deletingPathExtension().lastPathComponent
+    }
+
     /// 前台应用图标 → 64px PNG base64（主题端有图标才会渲染"正在使用"）。
     var frontmostIconBase64: String? {
         guard let app = NSWorkspace.shared.frontmostApplication,

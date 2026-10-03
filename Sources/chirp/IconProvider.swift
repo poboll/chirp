@@ -31,11 +31,13 @@ final class IconProvider {
     }
 
     /// 命中 CDN 时返回 (url, nil)；否则 (nil, dataURI)。
-    func icon(forApp name: String, localFallback: String?) -> (url: String?, base64: String?) {
+    func icon(forApp name: String, bundleName: String?, localFallback: String?) -> (url: String?, base64: String?) {
         refreshManifestIfNeeded()
-        let slug = iconSlug(name)
-        if !slug.isEmpty && knownSlugs.contains(slug) {
-            return ("\(config.iconBase)/\(slug).png", nil)
+        for candidate in [name, bundleName ?? ""] {
+            let slug = iconSlug(candidate)
+            if !slug.isEmpty && knownSlugs.contains(slug) {
+                return ("\(config.iconBase)/\(slug).png", nil)
+            }
         }
         return (nil, localFallback)
     }

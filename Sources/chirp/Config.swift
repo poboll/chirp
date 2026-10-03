@@ -17,12 +17,34 @@ struct Config: Codable {
     static let configURL = FileManager.default.homeDirectoryForCurrentUser
         .appendingPathComponent(".config/chirp/config.json")
 
-    static func load() -> Config? {
-        guard let data = try? Data(contentsOf: configURL) else { return nil }
-        return try? JSONDecoder().decode(Config.self, from: data)
+    /// 读取结果：正常 / 文件不存在 / 文件损坏（损坏时绝不覆盖原文件）
+    enum LoadResult {
+        case ok(Config)
+        case missing
+        case corrupted(String)
     }
 
+    static func loadResult() -> LoadResult {
+        guard FileManager.default.fileExists(atPath: configURL.path) else { return .missing }
+        guard let data = try? Data(contentsOf: configURL) else {
+            return .corrupted("无法读取文件")
+        }
+        do {
+            return .ok(try JSONDecoder().decode(Config.self, from: data))
+        } catch {
+            return .corrupted(String(describing: error))
+        }
+    }
+
+    static func load() -> Config? {
+        if case .ok(let c) = loadResult() { return c }
+        return nil
+    }
+
+    /// 仅在文件不存在时写入模板；已存在（哪怕损坏）一律不动，返回路径供提示。
+    @discardableResult
     static func writeTemplate() -> String {
+        if FileManager.default.fileExists(atPath: configURL.path) { return configURL.path }
         let dir = configURL.deletingLastPathComponent()
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         let template = Config(endpoint: "https://example.com/api/v3/fn/ps/update", key: "your-key-here")
