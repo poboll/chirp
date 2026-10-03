@@ -10,6 +10,9 @@ struct Config: Codable {
     var debounceSeconds: Double = 3
     /// 心跳间隔秒数（snippet 缓存 300 秒，保持略短于它）
     var heartbeatSeconds: Double = 240
+    /// 应用图标 CDN（poboll/app-icons + jsdelivr）；命中的应用发轻量 URL，未命中回落内嵌图标
+    var iconManifestUrl: String = "https://fastly.jsdelivr.net/gh/poboll/app-icons@main/manifest.json"
+    var iconBase: String = "https://fastly.jsdelivr.net/gh/poboll/app-icons@main/icons"
 
     static let configURL = FileManager.default.homeDirectoryForCurrentUser
         .appendingPathComponent(".config/chirp/config.json")

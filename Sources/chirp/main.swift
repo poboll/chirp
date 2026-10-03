@@ -8,6 +8,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
     private var observer = Observer()
     private var reporter: Reporter!
+    private var iconProvider: IconProvider!
     private var config: Config!
 
     private var debounceTimer: Timer?
@@ -29,6 +30,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         self.config = config
         reporter = Reporter(config: config)
+        iconProvider = IconProvider(config: config)
 
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         statusItem.button?.image = NSImage(systemSymbolName: "bird.fill", accessibilityDescription: "chirp")
@@ -81,8 +83,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func reportNow(appName: String, force: Bool = false) {
         guard !paused else { return }
         currentApp = appName
-        let icon = observer.frontmostIconBase64
-        reporter.report(appName: appName, iconBase64: icon, force: force) { [weak self] ok in
+        let local = observer.frontmostIconBase64
+        let (url, base64) = iconProvider.icon(forApp: appName, localFallback: local)
+        reporter.report(appName: appName, iconUrl: url, iconBase64: base64, force: force) { [weak self] ok in
             guard let self else { return }
             let formatter = DateFormatter()
             formatter.dateFormat = "HH:mm:ss"

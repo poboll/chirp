@@ -1,6 +1,24 @@
 import AppKit
 import Foundation
 
+/// 应用名 → CDN 文件名 slug（与 ExportIcons.swift 的规则一致）。
+func iconSlug(_ name: String) -> String {
+    var out = ""
+    var lastUnderscore = false
+    for ch in name {
+        if ch.isLetter || ch.isNumber || "+.#".contains(ch) {
+            out.append(ch)
+            lastUnderscore = false
+        } else if !lastUnderscore {
+            out.append("_")
+            lastUnderscore = true
+        }
+    }
+    while out.hasPrefix("_") { out.removeFirst() }
+    while out.hasSuffix("_") { out.removeLast() }
+    return out
+}
+
 /// 监听前台应用切换 + 睡眠/唤醒。
 final class Observer {
     var onAppChange: ((String) -> Void)?
