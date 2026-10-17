@@ -187,8 +187,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         refreshItem.target = self
         menu.addItem(refreshItem)
         menu.addItem(.separator())
-
-        menu.addItem(.separator())
         let helpItem = NSMenuItem(
             title: "使用说明",
             action: #selector(openHelp),

@@ -15,6 +15,14 @@
 
 </div>
 
+<div align="center">
+
+![真实菜单栏截图](assets/menu-shot.png)
+
+<sub>装上之后，你的菜单栏右侧就是它 —— 实时显示「正在使用 XX」。</sub>
+
+</div>
+
 ---
 
 `chirp.` 是一个 macOS 菜单栏应用：看着你正在用什么软件，叽叽喳喳地告诉博客。访客打开你的页面，导航栏上就会显示「正在使用 Xcode」这样的实时状态。
@@ -95,8 +103,10 @@ sh scripts/install-launch-agent.sh # 开机自启动 + 立即运行
 ```bash
 swift build            # 构建
 swift run              # 本地跑
-swift scripts/IconGen.swift build/AppIcon.iconset  # 重新生成图标
+swift scripts/IconGen.swift build/AppIcon.iconset  # 重新生成圆角图标
 ```
+
+图标遵循新版 macOS 标准：超椭圆（squircle）圆角矩形、`~10%` 内边距、鼠尾草绿渐变 + 白色 `bird.fill` 剪影，与 App Store / 系统原生图标同一套观感。
 
 ## 致谢
 
