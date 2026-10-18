@@ -68,7 +68,7 @@ h1 em{font-style:normal;background:linear-gradient(180deg,#fff 30%,#8f8f8f);-web
   font-family:var(--mono);font-size:12.5px;color:var(--dim);
   background:#101010;border:1px solid var(--line);border-radius:10px;padding:12px 16px;text-align:left}
 .install .p{color:var(--amber)}
-.install code{overflow-x:auto;white-space:nowrap;flex:1;scrollbar-width:none}
+.install code{overflow-x:auto;white-space:nowrap;flex:1;min-width:0;scrollbar-width:none}
 .install code::-webkit-scrollbar{display:none}
 .install button{flex:none;background:#1a1a1a;border:1px solid var(--line-2);color:var(--dim);border-radius:6px;padding:4px 10px;font-size:11px;font-family:var(--mono);cursor:pointer;transition:all .15s}
 .install button:hover{color:var(--fg);border-color:rgba(255,255,255,.3)}
@@ -106,7 +106,7 @@ h1 em{font-style:normal;background:linear-gradient(180deg,#fff 30%,#8f8f8f);-web
 .mb-item{display:flex;align-items:center;justify-content:center;height:22px;min-width:26px;padding:0 6px;border-radius:5px}
 .mb-item.active{background:rgba(255,255,255,.20)}
 .mb-ic{width:15px;height:15px;display:block}
-.mb-time{font-size:12.5px;font-variant-numeric:tabular-nums;padding:0 2px 0 8px;opacity:.92;letter-spacing:.01em}
+.mb-time{font-size:12.5px;font-variant-numeric:tabular-nums;padding:0 2px 0 8px;opacity:.92;letter-spacing:.01em;min-width:138px;text-align:right;white-space:nowrap}
 
 /* 展开的下拉菜单：锚定在小鸟图标下方 */
 .mb-anchor{position:relative;display:flex;align-items:center}
@@ -123,7 +123,7 @@ h1 em{font-style:normal;background:linear-gradient(180deg,#fff 30%,#8f8f8f);-web
   padding:4px 10px;border-radius:5px;line-height:1.4;white-space:nowrap}
 .mp-row .k{color:rgba(255,255,255,.42);font-size:12.5px;flex:none;letter-spacing:.02em}
 .mp-row.info{color:rgba(255,255,255,.66)}
-.mp-row.info b{color:#fff;font-weight:500}
+.mp-row.info b{color:#fff;font-weight:500;font-variant-numeric:tabular-nums}
 .mp-row .ok{color:#4bd07a;font-size:11px;margin-left:6px}
 .mp-row:hover{background:rgba(255,255,255,.10)}
 
@@ -185,7 +185,8 @@ footer .up{color:var(--dim)}
 @media(prefers-reduced-motion:reduce){.r{animation:none;opacity:1}}
 @media(max-width:860px){
   .grid{grid-template-columns:repeat(2,1fr)}
-  .step{grid-template-columns:1fr;gap:14px}
+  .step{grid-template-columns:minmax(0,1fr);gap:14px}
+  .step>*{min-width:0}
   .tiers{grid-template-columns:1fr}
   nav .lk{display:none}
 }
@@ -252,7 +253,7 @@ footer .up{color:var(--dim)}
             <div class="mp-sep"></div>
             <div class="mp-row info">当前应用<b>Xcode</b></div>
             <div class="mp-row info">博客显示<b>Xcode</b></div>
-            <div class="mp-row info">状态<b id="mpReported">已上报 12:43</b></div>
+            <div class="mp-row info">状态<b id="mpReported"></b></div>
             <div class="mp-sep"></div>
             <div class="mp-row">暂停上报<span class="k">⌘P</span></div>
             <div class="mp-row">打开配置文件<span class="k">⌘,</span></div>
@@ -268,7 +269,7 @@ footer .up{color:var(--dim)}
         <span class="mb-item"><img class="mb-ic" src="assets/mb-cc-fallback.png" alt=""></span>
         <span class="mb-item"><img class="mb-ic" src="assets/mb-wifi.png" alt=""></span>
         <span class="mb-item"><img class="mb-ic" src="assets/mb-battery.png" alt=""></span>
-        <span class="mb-time" id="mbClock">10月18日 周日 12:43</span>
+        <span class="mb-time" id="mbClock"></span>
       </div>
     </div>
   </div>
