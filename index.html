@@ -4,16 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>chirp. — 菜单栏的报信小鸟</title>
-<meta name="description" content="macOS 菜单栏小鸟：把你正在使用的软件实时报到博客。纯 AppKit，零依赖，约 200KB，开机自启。">
+<meta name="description" content="macOS 菜单栏小鸟：把你正在使用的软件实时报到博客。纯 AppKit，零依赖，约 250KB，开机自启。">
 <meta property="og:title" content="chirp. — 菜单栏的报信小鸟">
-<meta property="og:description" content="macOS 菜单栏小鸟：把你正在使用的软件实时报到博客。纯 AppKit，零依赖，约 200KB。">
+<meta property="og:description" content="macOS 菜单栏小鸟：把你正在使用的软件实时报到博客。纯 AppKit，零依赖，约 250KB。">
 <meta property="og:image" content="og.png">
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="og.png">
-<link rel="icon" href="favicon.ico" sizes="any">
-<link rel="icon" type="image/png" sizes="32x32" href="favicon.ico">
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="favicon.ico" sizes="16x16 32x32 48x48 64x64 128x128 256x256">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -76,17 +77,61 @@ h1 em{font-style:normal;background:linear-gradient(180deg,#fff 30%,#8f8f8f);-web
 .badge b{display:block;font-family:var(--mono);font-size:19px;font-weight:500;letter-spacing:-.02em}
 .badge span{font-size:11.5px;color:var(--faint);font-family:var(--mono)}
 
-/* ── screenshot：真实菜单栏 ── */
+/* ── 菜单栏展示（纯 CSS 重建，任意分辨率清晰） ── */
 .shot{padding:26px 0 90px}
-.shot .cap{font-family:var(--mono);font-size:11px;color:var(--faint);text-align:center;margin-bottom:18px;letter-spacing:.04em}
+.shot .cap{font-family:var(--mono);font-size:11.5px;color:var(--faint);text-align:center;margin-bottom:20px;letter-spacing:.04em}
 .shot .cap b{color:var(--dim);font-weight:500}
-.window{border-radius:14px;overflow:hidden;border:1px solid var(--line-2);
-  background:linear-gradient(180deg,rgba(255,255,255,.04),transparent 40%),#0c0c0c;
-  box-shadow:0 30px 80px -20px rgba(0,0,0,.9),0 0 80px -30px rgba(255,178,36,.15)}
-/* 真实菜单栏：原生分辨率抓图，按 2× 显示保持锐利 */
-.menu-screen{border-radius:12px;overflow:hidden;border:1px solid var(--line);background:#000;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.06);max-width:520px;margin:0 auto}
-.menu-screen img{display:block;width:100%;height:auto;image-rendering:-webkit-optimize-contrast}
+
+.desk{position:relative;max-width:880px;margin:0 auto;border-radius:14px;overflow:visible;
+  border:1px solid var(--line-2);min-height:424px;
+  background:
+    radial-gradient(120% 95% at 12% -10%,rgba(94,142,112,.24),transparent 58%),
+    radial-gradient(110% 85% at 92% 6%,rgba(58,88,118,.22),transparent 62%),
+    linear-gradient(158deg,#12171a 0%,#0b0e10 55%,#08090a 100%);
+  box-shadow:0 34px 90px -24px rgba(0,0,0,.92),0 0 90px -34px rgba(255,178,36,.14);
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC",sans-serif}
+/* 圆角裁切交给内层，避免裁掉下拉菜单 */
+.desk>.menubar{border-radius:14px 14px 0 0}
+.desk::before{content:"";position:absolute;inset:0;border-radius:14px;pointer-events:none;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.05)}
+
+/* 菜单栏本体 */
+.menubar{display:flex;align-items:center;justify-content:space-between;height:30px;padding:0 12px;
+  background:rgba(20,23,26,.58);
+  -webkit-backdrop-filter:blur(22px) saturate(1.5);backdrop-filter:blur(22px) saturate(1.5);
+  border-bottom:1px solid rgba(255,255,255,.07);color:rgba(255,255,255,.93);font-size:13px}
+.mb-left{display:flex;align-items:center;gap:16px;font-weight:600;letter-spacing:.005em}
+.mb-left .mb-app{opacity:.95}
+.mb-right{display:flex;align-items:center;gap:1px}
+.mb-item{display:flex;align-items:center;justify-content:center;height:22px;min-width:26px;padding:0 6px;border-radius:5px}
+.mb-item.active{background:rgba(255,255,255,.20)}
+.mb-ic{width:15px;height:15px;display:block}
+.mb-time{font-size:12.5px;font-variant-numeric:tabular-nums;padding:0 2px 0 8px;opacity:.92;letter-spacing:.01em}
+
+/* 展开的下拉菜单：锚定在小鸟图标下方 */
+.mb-anchor{position:relative;display:flex;align-items:center}
+.menu-pop{position:absolute;top:calc(100% + 8px);right:0;width:272px;padding:5px;z-index:5;
+  background:rgba(40,42,47,.84);
+  -webkit-backdrop-filter:blur(34px) saturate(1.7);backdrop-filter:blur(34px) saturate(1.7);
+  border:1px solid rgba(255,255,255,.11);border-radius:10px;
+  box-shadow:0 20px 55px -10px rgba(0,0,0,.78),0 0 0 .5px rgba(0,0,0,.45);
+  color:#f3f3f3;font-size:13px}
+.mp-head{display:flex;align-items:baseline;justify-content:space-between;padding:5px 10px 7px;font-weight:600}
+.mp-head span{font-weight:400;font-size:11px;color:rgba(255,255,255,.42);font-family:var(--mono)}
+.mp-sep{height:1px;margin:4px 10px;background:rgba(255,255,255,.11)}
+.mp-row{display:flex;align-items:center;justify-content:space-between;gap:18px;
+  padding:4px 10px;border-radius:5px;line-height:1.4;white-space:nowrap}
+.mp-row .k{color:rgba(255,255,255,.42);font-size:12.5px;flex:none;letter-spacing:.02em}
+.mp-row.info{color:rgba(255,255,255,.66)}
+.mp-row.info b{color:#fff;font-weight:500}
+.mp-row .ok{color:#4bd07a;font-size:11px;margin-left:6px}
+.mp-row:hover{background:rgba(255,255,255,.10)}
+
+@media(max-width:640px){
+  .desk{min-height:424px}
+  .menu-pop{right:auto;left:50%;transform:translateX(-50%);width:min(272px,calc(100vw - 48px))}
+  .mb-left .mb-extra{display:none}
+}
 
 /* ── sections ── */
 section{padding:88px 0;border-top:1px solid var(--line)}
@@ -159,7 +204,8 @@ footer .up{color:var(--dim)}
     <a class="lk" href="#integration">接入</a>
     <a class="lk" href="#api">接口</a>
     <a class="lk" href="#security">权限</a>
-    <a class="lk" href="https://github.com/poboll/app-icons" target="_blank" rel="noopener">app-icons</a>
+    <a class="lk" href="#ecosystem">生态</a>
+    <a class="lk" href="#config">配置</a>
     <a class="btn ghost" href="https://github.com/poboll/chirp" target="_blank" rel="noopener">GitHub</a>
     <a class="btn" href="https://github.com/poboll/chirp/releases/latest" target="_blank" rel="noopener">下载 v1.1.0</a>
   </div>
@@ -170,12 +216,12 @@ footer .up{color:var(--dim)}
   <div class="wrap">
     <div class="eyebrow r"><span class="dot"></span>Open Source · MIT · macOS 13+</div>
     <h1 class="r r2">菜单栏的<em>报信小鸟</em></h1>
-    <p class="sub r r3">把你正在使用的软件实时报到博客。纯 AppKit，<b>零依赖</b>，约 <b>200KB</b>，开机自启——访客打开你的页面，导航栏上就是一行实时的「正在使用 XX」。</p>
+    <p class="sub r r3">把你正在使用的软件实时报到博客。纯 AppKit，<b>零依赖</b>，约 <b>250KB</b>，开机自启——访客打开你的页面，导航栏上就是一行实时的「正在使用 XX」。</p>
     <div class="r r4">
       <div class="install"><span class="p">$</span><code>curl -fsSL https://raw.githubusercontent.com/poboll/chirp/main/scripts/install.sh | bash</code><button onclick="cp(this)">copy</button></div>
     </div>
     <div class="badges r r5">
-      <div class="badge"><b>200KB</b><span>二进制体积</span></div>
+      <div class="badge"><b>250KB</b><span>二进制体积</span></div>
       <div class="badge"><b>0</b><span>第三方依赖</span></div>
       <div class="badge"><b>3s</b><span>切换防抖</span></div>
       <div class="badge"><b>240s</b><span>心跳续期</span></div>
@@ -185,10 +231,45 @@ footer .up{color:var(--dim)}
 </header>
 
 <div class="shot wrap r r5">
-  <div class="cap">这就是你装好 chirp. 后的真实菜单栏 → &nbsp;<b>第 6 个图标就是报信小鸟</b></div>
-  <div class="window">
-    <div class="menu-screen">
-      <img src="assets/menu-shot.png" alt="chirp. 真实菜单栏截图" loading="lazy">
+  <div class="cap">装好之后，菜单栏右侧多一只小鸟 —— 点开就是「<b>当前应用 / 博客显示 / 上报状态</b>」</div>
+  <div class="desk">
+    <!-- 菜单栏 -->
+    <div class="menubar">
+      <div class="mb-left">
+        <span class="mb-extra">Finder</span>
+        <span class="mb-extra">文件</span>
+        <span class="mb-extra">编辑</span>
+        <span class="mb-extra">显示</span>
+        <span class="mb-extra">前往</span>
+        <span class="mb-extra">窗口</span>
+        <span class="mb-extra">帮助</span>
+      </div>
+      <div class="mb-right">
+        <span class="mb-anchor">
+          <span class="mb-item" title="chirp. 报信小鸟"><img class="mb-ic" src="assets/mb-bird.png" alt="chirp."></span><!-- 下拉菜单，锚定在小鸟下方 -->
+          <div class="menu-pop">
+            <div class="mp-head">chirp. 报信小鸟 <span>v1.1.0</span></div>
+            <div class="mp-sep"></div>
+            <div class="mp-row info">当前应用<b>Xcode</b></div>
+            <div class="mp-row info">博客显示<b>Xcode</b></div>
+            <div class="mp-row info">状态<b id="mpReported">已上报 12:43</b></div>
+            <div class="mp-sep"></div>
+            <div class="mp-row">暂停上报<span class="k">⌘P</span></div>
+            <div class="mp-row">打开配置文件<span class="k">⌘,</span></div>
+            <div class="mp-row">立即刷新<span class="k">⌘R</span></div>
+            <div class="mp-sep"></div>
+            <div class="mp-row">使用说明<span class="k">⌘H</span></div>
+            <div class="mp-row">关于 chirp.<span class="k"></span></div>
+            <div class="mp-row">GitHub 仓库<span class="k"></span></div>
+            <div class="mp-sep"></div>
+            <div class="mp-row">退出 chirp.<span class="k">⌘Q</span></div>
+          </div>
+        </span>
+        <span class="mb-item"><img class="mb-ic" src="assets/mb-cc-fallback.png" alt=""></span>
+        <span class="mb-item"><img class="mb-ic" src="assets/mb-wifi.png" alt=""></span>
+        <span class="mb-item"><img class="mb-ic" src="assets/mb-battery.png" alt=""></span>
+        <span class="mb-time" id="mbClock">10月18日 周日 12:43</span>
+      </div>
     </div>
   </div>
 </div>
@@ -222,7 +303,7 @@ footer .up{color:var(--dim)}
                 mx-space snippet 缓存 5 分钟 <span class="dim">+</span> WebSocket 广播
                                 │
                                 ▼
-             <span class="hl">博客导航栏「正在使用 XX」</span> <span class="dim">（Shiro / Yohaku 主题）</span></div>
+             <span class="hl">博客导航栏「正在使用 XX」</span> <span class="dim">（自建主题 / Shiro 时代方案）</span></div>
   </div>
 </section>
 
@@ -231,7 +312,7 @@ footer .up{color:var(--dim)}
     <div class="sec-head">
       <div class="eyebrow">Install</div>
       <h2>一分钟装好</h2>
-      <p>macOS 13+（Apple Silicon）。先在 mx-space 后台备好 <code>ps/update</code> fn snippet（Shiro 生态自带）。</p>
+      <p>macOS 13+（Apple Silicon）。先在 mx-space 后台自建 <code>ps/update</code> 函数 —— 它不随主题自带，是最小的一步自建代码。</p>
     </div>
     <div class="steps">
       <div class="step"><div class="l"><h3>一键安装</h3><p>curl · release · launchagent</p></div>
@@ -256,7 +337,7 @@ footer .up{color:var(--dim)}
       <p>「正在使用」的应用图标按三层回落，绝大多数应用不需要任何手动配置——新装软件即刻有图标。</p>
     </div>
     <div class="tiers">
-      <div class="tier"><div class="n">TIER 1</div><h4>主题内置映射</h4><p>Shiro/Yohaku 自带 Innei reporter-assets 名称映射，Xcode、VS Code 等开发软件直接命中。</p></div>
+      <div class="tier"><div class="n">TIER 1</div><h4>主题内置映射</h4><p>自建主题可复用 <a href="https://github.com/Innei/reporter-assets" target="_blank" rel="noopener" style="color:var(--fg)">Innei/reporter-assets</a> 的名称映射（Xcode、VS Code 等常见开发软件，含中文应用名）—— 该仓库未声明 License，二次分发前请先确认。</p></div>
       <div class="tier"><div class="n">TIER 2</div><h4>app-icons CDN</h4><p><a href="https://github.com/poboll/app-icons" target="_blank" rel="noopener" style="color:var(--fg)">poboll/app-icons</a> 的 manifest（约 240 个常见 macOS 应用）映射成 jsdelivr 图标直链上报，manifest 每日自动刷新。</p></div>
       <div class="tier"><div class="n">TIER 3</div><h4>data URI 兜底</h4><p>两层都未命中时直接抓本机应用图标内嵌上报——新装任何软件立即可用，进了图标库后自动切轻量 CDN 模式。</p></div>
     </div>
@@ -369,8 +450,8 @@ async function POST(ctx: Context) {
 }
 
 </div></div></div>
-      <div class="step"><div class="l"><h3>主题：开「正在使用」模块</h3><p>Shiro / Yohaku 主题配置</p></div>
-        <div><p style="font-size:13.5px;color:var(--dim)">主题配置里把活动模块的端点指向这个函数（Yohaku 示例）：</p>
+      <div class="step"><div class="l"><h3>主题：接上读接口</h3><p>自建主题 / Shiro 时代方案</p></div>
+        <div><p style="font-size:13.5px;color:var(--dim)">在你自己的主题里把活动模块指向这个函数。<b>注意</b>：新一代 Yohaku 的 Live Desk 走的是 mx-core 内置 Companion 接口（<code>GET /companion/presence/public</code>），不是这套 <code>ps/update</code> 函数；下面仅是自建/Shiro 时代配置的形态示意：</p>
           <div class="term">{ "module": { "activity": {
   "endpoint": "https://kami.caiths.com/api/v3/fn/ps/update"
 } } }</div>
@@ -427,22 +508,105 @@ async function POST(ctx: Context) {
   </div>
 </section>
 
+<section id="ecosystem">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">Ecosystem</div>
+      <h2>它属于 mx-space 这一套</h2>
+      <p>chirp 不是孤立的玩具 —— 它是 <a href="https://github.com/Innei" target="_blank" rel="noopener" style="color:var(--fg)">Innei</a> 那套写作生态里负责「报信」的一块。下面按仓库实况标注状态，方便你判断自己该配哪一套。</p>
+    </div>
+
+    <div class="tiers" style="margin-bottom:26px">
+      <div class="tier"><div class="n">后端</div><h4><a href="https://github.com/mx-space/core" target="_blank" rel="noopener">mx-space/core</a></h4><p>生态的心脏：NestJS + Fastify + PostgreSQL + Redis 的无头 CMS，v12 起改用 PostgreSQL。chirp 的 <code>ps/update</code> 函数就跑在它上面。</p></div>
+      <div class="tier"><div class="n">前端 · 推荐</div><h4><a href="https://github.com/Innei/Yohaku" target="_blank" rel="noopener">Yohaku 余白</a></h4><p>新一代排版设计系统 + iOS 客户端，官方推荐的前端体验（线上实例 <a href="https://innei.in" target="_blank" rel="noopener">innei.in</a>）。设计系统与 iOS 端 MIT 开源。</p></div>
+      <div class="tier"><div class="n">前端 · 经典</div><h4><a href="https://github.com/Innei/Shiro" target="_blank" rel="noopener">Shiro</a></h4><p>极简个人站，纸雪质感，★4k+，AGPLv3。chirp 的默认路径（<code>ps/update</code> 函数）最贴合这一代用法。</p></div>
+      <div class="tier"><div class="n">前端 · 上一代</div><h4>Shiroi</h4><p>Yohaku 之前的付费前端，与 Yohaku 已完全分离、赞助关系独立。仓库非公开，需通过 <a href="https://github.com/sponsors/Innei" target="_blank" rel="noopener">GitHub Sponsors</a> 获取，故此处不直链。</p></div>
+      <div class="tier"><div class="n">上报端</div><h4><a href="https://github.com/mx-space/ProcessReporterMac" target="_blank" rel="noopener">ProcessReporterMac</a></h4><p>chirp 的直系祖先（MIT）：为 Shiro 上报、经服务端 WebSocket 实时推给访客。chirp 是它的极简重写。</p></div>
+      <div class="tier"><div class="n">后台 · 已归档</div><h4><a href="https://github.com/mx-space/mx-admin" target="_blank" rel="noopener">mx-admin</a></h4><p>上一代 Vue 3 管理后台，现已归档 —— 新版本已并入 mx-core 自带 admin，无需单独部署。</p></div>
+    </div>
+
+    <div class="flow" style="margin-bottom:22px">chirp <span class="dim">（本机）</span> ──▶ mx-core <span class="hl">ps/update</span> 函数 ──▶ 缓存 + WebSocket ──▶ 你的博客导航栏</div>
+
+    <div class="step">
+      <div class="l"><h3>⚠️ 两套机制，别配错</h3><p>生态里同时存在两代方案</p></div>
+      <div>
+        <p style="font-size:13.5px;color:var(--dim);margin-bottom:12px">这是最容易踩的坑 —— 两者的接口完全不同：</p>
+        <p style="font-size:13.5px;color:var(--dim);margin-bottom:10px"><strong style="color:var(--fg)">① 函数订阅式（chirp 采用）</strong>：客户端 POST 到 mx-space 的 serverless 函数 <code>/api/v3/fn/ps/update</code>，函数写缓存并经 WebSocket 广播。适合自建、Shiro 时代、以及任何你自己写的读接口。</p>
+        <p style="font-size:13.5px;color:var(--dim);margin-bottom:10px"><strong style="color:var(--fg)">② mx-core Companion（新一代）</strong>：mx-core 内置 <code>companion</code> 模块，路由为 <code>PUT /companion/presence</code>、<code>POST /companion/presence/clear</code>、<code>GET /companion/presence/public</code>。Yohaku 的「Live Desk」消费的是这一条。</p>
+        <p style="font-size:13.5px;color:var(--dim)">chirp 目前对接的是 <strong style="color:var(--fg)">①</strong>。如果你要用 Yohaku 的 Live Desk（②），chirp 不能直接顶替 —— 需要另配一个中转函数，或等 chirp 适配 Companion 协议。</p>
+      </div>
+    </div>
+
+    <p style="margin-top:22px;font-size:13px;color:var(--dim)">关于 Yohaku：完整 Web 实现为赞助后开放访问的项目，通过 <a href="https://github.com/sponsors/Innei" target="_blank" rel="noopener" style="color:var(--fg)">GitHub Sponsors</a> 支持作者后获取；本页只引用其公开的设计系统与 iOS 源码。</p>
+  </div>
+</section>
+
 <section id="config">
   <div class="wrap">
     <div class="sec-head">
       <div class="eyebrow">Config</div>
-      <h2>配置项</h2>
-      <p>配置文件位于 <code>~/.config/chirp/config.json</code>，权限保持 600。</p>
+      <h2>配置文件怎么写</h2>
+      <p>只有 <code>~/.config/chirp/config.json</code> 一个文件，权限 <code>600</code>。下面这份<strong>直接可用</strong>——把 <code>endpoint</code> 和 <code>key</code> 换成你自己的两行，其余保持默认即可。</p>
     </div>
+
+    <div class="step" style="margin-bottom:14px">
+      <div class="l"><h3>1 · 推荐配置（开箱即用）</h3><p>图标 CDN 已是可用默认值</p></div>
+      <div>
+        <div class="term">{
+  <span class="hl">"endpoint"</span>: <span class="c">"https://your-blog.example.com/api/v3/fn/ps/update"</span>,
+  <span class="hl">"key"</span>: <span class="c">"与 snippet 里 AUTH_KEY 一致的密钥"</span>,
+  <span class="hl">"debounceSeconds"</span>: 3,
+  <span class="hl">"heartbeatSeconds"</span>: 240,
+  <span class="hl">"iconManifestUrl"</span>: <span class="c">"https://fastly.jsdelivr.net/gh/poboll/app-icons@main/manifest.json"</span>,
+  <span class="hl">"iconBase"</span>: <span class="c">"https://fastly.jsdelivr.net/gh/poboll/app-icons@main/icons"</span>
+}<button onclick="cp(this)">copy</button></div>
+        <p style="font-size:13px;color:var(--dim);margin-top:10px">后四行<strong>可以整段删掉</strong>——chirp 内置了完全相同的默认值（见下表「默认」列）。写上只是为了让你看得见、能改。</p>
+      </div>
+    </div>
+
+    <div class="step" style="margin-bottom:14px">
+      <div class="l"><h3>2 · 一行命令写入</h3><p>免手写，自动 600 权限</p></div>
+      <div>
+        <div class="term"><span class="p">$</span> mkdir -p ~/.config/chirp &amp;&amp; cat &gt; ~/.config/chirp/config.json &lt;&lt;'EOF'
+{
+  "endpoint": "https://your-blog.example.com/api/v3/fn/ps/update",
+  "key": "YOUR_KEY"
+}
+EOF
+<span class="p">$</span> chmod 600 ~/.config/chirp/config.json<button onclick="cp(this)">copy</button></div>
+        <p style="font-size:13px;color:var(--dim);margin-top:10px">只写这两行也能跑：其余字段自动取默认值。写完点菜单栏小鸟 → <code>⌘R</code> 立即刷新验证。</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="l"><h3>3 · 验证是否生效</h3><p>三个地方看结果</p></div>
+      <div>
+        <p style="font-size:13.5px;color:var(--dim);margin-bottom:10px">依次确认：</p>
+        <div class="term"><span class="p">1.</span> 菜单栏小鸟 → 看「上次上报结果」是否 ✓
+<span class="p">2.</span> 空 POST 读一下服务端缓存：
+   curl -s -X POST https://your-blog.example.com/api/v3/fn/ps/update
+<span class="p">3.</span> 打开博客，导航栏应出现「正在使用 XX」<button onclick="cp(this)">copy</button></div>
+        <p style="font-size:13px;color:var(--dim);margin-top:10px">若第 1 步是红色 ✗：多半是 <code>key</code> 不匹配（401）或 <code>endpoint</code> 写错（404）。函数以 POST 注册，直接 GET 会 <code>FUNCTION_NOT_FOUND</code>。</p>
+      </div>
+    </div>
+
+    <h3 style="font-size:15px;font-weight:600;margin:34px 0 14px">字段说明</h3>
     <table>
       <tr><th>字段</th><th>默认</th><th>说明</th></tr>
-      <tr><td><code>endpoint</code></td><td>必填</td><td><code>ps/update</code> fn snippet 的完整地址</td></tr>
-      <tr><td><code>key</code></td><td>必填</td><td>与 snippet 一致的密钥</td></tr>
-      <tr><td><code>debounceSeconds</code></td><td><code>3</code></td><td>应用切换防抖，避免频繁切换刷屏</td></tr>
-      <tr><td><code>heartbeatSeconds</code></td><td><code>240</code></td><td>心跳续期间隔（服务端缓存 5 分钟，须小于它）</td></tr>
-      <tr><td><code>iconManifestUrl</code></td><td>app-icons CDN</td><td>应用名 → 图标映射清单，每日自动刷新</td></tr>
-      <tr><td><code>iconBase</code></td><td>app-icons CDN</td><td>图标 URL 前缀；未命中自动回落 data URI</td></tr>
+      <tr><td><code>endpoint</code></td><td>必填</td><td><code>ps/update</code> 函数的完整地址，含 <code>/api/v3/fn/</code> 前缀</td></tr>
+      <tr><td><code>key</code></td><td>必填</td><td>与 snippet 内 <code>AUTH_KEY</code> 完全一致；不一致一律 401</td></tr>
+      <tr><td><code>debounceSeconds</code></td><td><code>3</code></td><td>切换应用后等几秒再上报，避免快速切换刷屏</td></tr>
+      <tr><td><code>heartbeatSeconds</code></td><td><code>240</code></td><td>心跳续期间隔；服务端缓存 300 秒，必须小于它</td></tr>
+      <tr><td><code>iconManifestUrl</code></td><td>app-icons CDN</td><td>应用名 → 图标清单；默认指向 <a href="https://github.com/poboll/app-icons" target="_blank" rel="noopener" style="color:var(--fg)">poboll/app-icons</a>，每日刷新</td></tr>
+      <tr><td><code>iconBase</code></td><td>app-icons CDN</td><td>图标 URL 前缀；未命中时自动回落为内嵌 data URI</td></tr>
     </table>
+
+    <div class="tiers" style="margin-top:22px">
+      <div class="tier"><div class="n">默认值</div><h4>删掉也能跑</h4><p>四个可选字段都有内置默认值，配置里只写 <code>endpoint</code> + <code>key</code> 是合法且推荐的极简写法。</p></div>
+      <div class="tier"><div class="n">安全</div><h4>600 权限</h4><p>配置文件含密钥，务必 <code>chmod 600</code>。chirp 只读不写，损坏时也绝不覆盖你的文件。</p></div>
+      <div class="tier"><div class="n">自建 CDN</div><h4>可换自己的</h4><p>把 <code>iconManifestUrl</code> / <code>iconBase</code> 指向你自己的图标库即可，格式见 <a href="https://github.com/poboll/app-icons" target="_blank" rel="noopener" style="color:var(--fg)">app-icons</a> 的 <code>manifest.json</code>。</p></div>
+    </div>
+
     <p style="margin-top:22px;font-size:13px;color:var(--dim)">菜单栏小鸟：单击看「当前应用 / 博客显示 / 上次上报结果」，<code>⌘P</code> 暂停 · <code>⌘R</code> 刷新 · <code>⌘,</code> 配置 · <code>⌘H</code> 本页。</p>
   </div>
 </section>
@@ -450,15 +614,48 @@ async function POST(ctx: Context) {
 <footer>
   <div class="wrap">
     <div>chirp. — 灵感来自 Innei 的 <a href="https://github.com/Innei/ProcessReporter" target="_blank" rel="noopener">ProcessReporter</a> · MIT License</div>
-    <div class="up">updated 2026-10-18</div>
+    <div class="up">updated 2026-10-18 12:43</div>
     <div><a href="https://github.com/poboll" target="_blank" rel="noopener">poboll</a> · <a href="https://blog.caiths.com" target="_blank" rel="noopener">blog.caiths.com</a></div>
   </div>
 </footer>
 
 <script>
+/* ── 菜单栏时钟：跟随访客本机时间实时更新 ── */
+(function(){
+  var WD = ['日','一','二','三','四','五','六'];
+  var el = document.getElementById('mbClock');
+  function pad(n){ return n < 10 ? '0' + n : '' + n; }
+  var rep = document.getElementById('mpReported');
+  function render(){
+    var d = new Date();
+    var hm = pad(d.getHours()) + ':' + pad(d.getMinutes());
+    if (el) {
+      el.textContent = (d.getMonth() + 1) + '月' + d.getDate() + '日 周'
+        + WD[d.getDay()] + ' ' + hm;
+    }
+    // 上报发生在刚刚，所以时间戳与当前分钟一致
+    if (rep) rep.textContent = '已上报 ' + hm;
+  }
+  render();
+  // 对齐到下一分钟再开始每分钟刷新，避免整页重复渲染
+  var ms = 60000 - (Date.now() % 60000);
+  setTimeout(function(){ render(); setInterval(render, 60000); }, ms);
+  // 从后台切回时立即校正
+  document.addEventListener('visibilitychange', function(){
+    if (!document.hidden) render();
+  });
+})();
+
 function cp(btn){
-  const t = btn.parentElement.querySelector('code').textContent;
-  navigator.clipboard.writeText(t).then(()=>{ btn.textContent='copied'; setTimeout(()=>btn.textContent='copy',1600) });
+  const host = btn.closest('.term, .install, .flow') || btn.parentElement;
+  let src = host.querySelector('code') || host;
+  if (src === host) {                      // clone so the "copy" label is excluded
+    const clone = host.cloneNode(true);
+    clone.querySelectorAll('button').forEach(b => b.remove());
+    src = clone;
+  }
+  const t = (src.textContent || '').replace(/\u00a0/g, ' ');
+  navigator.clipboard.writeText(t.trim()).then(()=>{ btn.textContent='copied'; setTimeout(()=>btn.textContent='copy',1600) });
 }
 </script>
 </body>
