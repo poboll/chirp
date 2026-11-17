@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="540" viewBox="0 0 900 540">
+<defs><linearGradient id="bg" x2="1" y2="1"><stop stop-color="#172625"/><stop offset="1" stop-color="#090c10"/></linearGradient></defs>
+<rect width="900" height="540" rx="18" fill="url(#bg)"/>
+<rect width="900" height="32" rx="12" fill="#171d20"/>
+<g font-family="-apple-system,BlinkMacSystemFont,PingFang SC,sans-serif" font-size="13" fill="#eee"><text x="24" y="21">Finder　 文件　 编辑　 显示　 前往　 窗口</text><text x="759" y="21">Wi-Fi　 100%</text></g>
+<path fill="#fff" d="M704 10c4-4 8-2 8 2l6 1-6 3c-1 5-7 7-11 3l-4 1 2-5-5-5 10 2z"/>
+<rect x="420" y="43" width="314" height="419" rx="12" fill="#292b30" stroke="#55585f" stroke-width=".7"/>
+<g font-family="-apple-system,BlinkMacSystemFont,PingFang SC,sans-serif" font-size="14" fill="#f0f0f0">
+<text x="438" y="70" fill="#eee">chirp. 报信小鸟</text><text x="716" y="70" text-anchor="end" fill="#eee">v1.2.0</text>
+<text x="438" y="99" fill="#aaa">接入：Companion v2</text><text x="716" y="99" text-anchor="end" fill="#aaa"></text>
+<path d="M434 117h286" stroke="#55585f" stroke-width=".6"/>
+<text x="438" y="139" fill="#aaa">当前应用</text><text x="716" y="139" text-anchor="end" fill="#aaa">Xcode</text>
+<text x="438" y="168" fill="#aaa">服务端应用</text><text x="716" y="168" text-anchor="end" fill="#aaa">Xcode</text>
+<text x="438" y="197" fill="#aaa">状态</text><text x="716" y="197" text-anchor="end" fill="#aaa">已上报 15:40:00</text>
+<path d="M434 215h286" stroke="#55585f" stroke-width=".6"/>
+<text x="438" y="237" fill="#eee">暂停上报</text><text x="716" y="237" text-anchor="end" fill="#eee">⌘P</text>
+<text x="438" y="266" fill="#eee">打开配置文件</text><text x="716" y="266" text-anchor="end" fill="#eee">⌘,</text>
+<text x="438" y="295" fill="#eee">立即刷新</text><text x="716" y="295" text-anchor="end" fill="#eee">⌘R</text>
+<path d="M434 313h286" stroke="#55585f" stroke-width=".6"/>
+<text x="438" y="335" fill="#eee">使用说明</text><text x="716" y="335" text-anchor="end" fill="#eee">⌘H</text>
+<text x="438" y="364" fill="#eee">关于 chirp.</text><text x="716" y="364" text-anchor="end" fill="#eee"></text>
+<text x="438" y="393" fill="#eee">GitHub 仓库</text><text x="716" y="393" text-anchor="end" fill="#eee"></text>
+<path d="M434 411h286" stroke="#55585f" stroke-width=".6"/>
+<text x="438" y="433" fill="#eee">退出 chirp.</text><text x="716" y="433" text-anchor="end" fill="#eee">⌘Q</text>
+</g>
+<text x="450" y="505" text-anchor="middle" font-family="-apple-system,PingFang SC,sans-serif" font-size="12" fill="#a1a8ad">v1.2.0 界面示意 · 正常时使用系统单色小鸟 · 非实时状态</text>
+</svg>

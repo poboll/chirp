@@ -1,101 +1,168 @@
 import Foundation
 
-/// 向 mx-space 的 ps/update fn snippet 上报当前前台应用。
-/// 契约（与服务器 snippet v3 对齐）：
-///   POST {key, timestamp, process: {name, description?}}
-///   空 body 的 POST 等价于读取当前状态。
+/// Never forward credentials through redirects, including HTTP downgrades.
+final class NoRedirectDelegate: NSObject, URLSessionTaskDelegate {
+    func urlSession(_ session: URLSession, task: URLSessionTask, willPerformHTTPRedirection response: HTTPURLResponse,
+                    newRequest request: URLRequest, completionHandler: @escaping (URLRequest?) -> Void) {
+        completionHandler(nil)
+    }
+}
+
+/// Legacy fn and mx-core Companion presence v2. Mutable state stays on the main queue.
 final class Reporter {
     private let config: Config
     private let session: URLSession
+    private var sequence = UInt64(Date().timeIntervalSince1970 * 1000)
+    private var generation = 0
+    private var task: URLSessionDataTask?
     private(set) var lastReportedName: String?
     private(set) var lastSuccessAt: Date?
     private(set) var lastError: String?
 
-    init(config: Config) {
+    init(config: Config, session: URLSession? = nil) {
         self.config = config
         let cfg = URLSessionConfiguration.ephemeral
         cfg.timeoutIntervalForRequest = 10
-        cfg.httpAdditionalHeaders = ["User-Agent": "chirp/1.0"]
-        self.session = URLSession(configuration: cfg)
+        cfg.httpAdditionalHeaders = ["User-Agent": "chirp/1.2.0"]
+        self.session = session ?? URLSession(configuration: cfg, delegate: NoRedirectDelegate(), delegateQueue: nil)
     }
 
-    struct Payload: Codable {
-        struct Process: Codable {
-            var name: String
-            var description: String?
-            var iconUrl: String?
-            var iconBase64: String?
-        }
-        var process: Process
-        var key: String
-        var timestamp: UInt
+    func invalidate() {
+        generation += 1
+        task?.cancel()
+        session.invalidateAndCancel()
     }
 
-    /// 上报；同名应用静默跳过（force 用于心跳续期）。
-    func report(appName: String, iconUrl: String? = nil, iconBase64: String? = nil, force: Bool = false, completion: ((Bool) -> Void)? = nil) {
-        if !force && appName == lastReportedName {
-            completion?(true)
-            return
+    private func nextMeta() -> [String: Any] {
+        sequence = max(sequence + 1, UInt64(Date().timeIntervalSince1970 * 1000))
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return ["schema": "yohaku.companion.presence", "schemaVersion": 2,
+                "requestId": UUID().uuidString.lowercased(), "deviceId": config.deviceId,
+                "sequence": sequence, "observedAt": formatter.string(from: Date())]
+    }
+
+    func makeReportRequest(appName: String, iconUrl: String?, iconBase64: String?) throws -> URLRequest {
+        try config.validate()
+        var request = URLRequest(url: URL(string: config.endpoint)!)
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        let body: [String: Any]
+        if config.usesCompanion {
+            request.httpMethod = "PUT"
+            request.setValue("Bearer " + config.deviceToken, forHTTPHeaderField: "Authorization")
+            // Companion wire compatibility level, independent of chirp's app version.
+            request.setValue("1.7.3", forHTTPHeaderField: "x-yohaku-companion-version")
+            var icon: Any = NSNull()
+            if let value = iconUrl, let url = URL(string: value), url.scheme == "https", url.host != nil,
+               url.user == nil, url.password == nil, value.utf8.count <= 2048 {
+                icon = ["url": value]
+            }
+            let normalized = appName.trimmingCharacters(in: .whitespacesAndNewlines).precomposedStringWithCanonicalMapping
+            let name = String(String.UnicodeScalarView(normalized.unicodeScalars.prefix(120)))
+            body = ["meta": nextMeta(), "data": ["availability": "active", "lease": ["ttlSeconds": 90],
+                "application": ["displayName": name, "activity": NSNull(), "window": NSNull(), "icon": icon],
+                "media": NSNull()]]
+        } else {
+            request.httpMethod = "POST"
+            var process: [String: Any] = ["name": appName]
+            process["iconUrl"] = iconUrl
+            process["iconBase64"] = iconBase64
+            body = ["process": process, "key": config.key, "timestamp": UInt64(Date().timeIntervalSince1970 * 1000)]
         }
-        guard let url = URL(string: config.endpoint) else {
-            lastError = "端点无效"
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+        return request
+    }
+
+    func report(appName: String, iconUrl: String? = nil, iconBase64: String? = nil, force: Bool = false,
+                completion: ((Bool) -> Void)? = nil) {
+        if !force && appName == lastReportedName && lastError == nil { return }
+        do {
+            let request = try makeReportRequest(appName: appName, iconUrl: iconUrl, iconBase64: iconBase64)
+            send(request) { [weak self] ok in
+                if ok { self?.lastReportedName = appName; self?.lastSuccessAt = Date() }
+                completion?(ok)
+            }
+        } catch {
+            lastError = error.localizedDescription
             completion?(false)
-            return
         }
-
-        let payload = Payload(
-            process: .init(name: appName, description: nil, iconUrl: iconUrl, iconBase64: iconBase64),
-            key: config.key,
-            timestamp: UInt(max(0, Date().timeIntervalSince1970))
-        )
-        let body = (try? JSONEncoder().encode(payload)) ?? Data()
-
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.httpBody = body
-
-        let task = session.dataTask(with: request) { [weak self] _, response, error in
-            let ok: Bool
-            if let error {
-                ok = false
-                self?.lastError = error.localizedDescription
-            } else {
-                let code = (response as? HTTPURLResponse)?.statusCode ?? -1
-                ok = (200..<300).contains(code)
-                self?.lastError = ok ? nil : "HTTP \(code)"
-            }
-            if ok {
-                self?.lastReportedName = appName
-                self?.lastSuccessAt = Date()
-            }
-            DispatchQueue.main.async { completion?(ok) }
-        }
-        task.resume()
     }
 
-    /// 读取服务器当前缓存的状态（用于菜单显示远端视角）。
-    func fetchRemoteState(completion: @escaping (String?) -> Void) {
-        guard let url = URL(string: config.endpoint) else {
-            completion(nil)
-            return
-        }
-        var request = URLRequest(url: url)
+    /// Higher sequence fences older in-flight updates when pausing or sleeping.
+    func clear(completion: @escaping (Bool) -> Void) {
+        guard config.usesCompanion else { completion(true); return }
+        var request = URLRequest(url: URL(string: config.endpoint + "/clear")!)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.httpBody = Data("{}".utf8)
+        request.setValue("Bearer " + config.deviceToken, forHTTPHeaderField: "Authorization")
+        request.setValue("1.7.3", forHTTPHeaderField: "x-yohaku-companion-version")
+        request.httpBody = try? JSONSerialization.data(withJSONObject: ["meta": nextMeta(), "data": ["reason": "paused"]])
+        lastReportedName = nil
+        send(request, completion: completion)
+    }
 
-        let task = session.dataTask(with: request) { data, response, _ in
-            guard let data,
-                (response as? HTTPURLResponse)?.statusCode == 200,
-                let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                let processName = obj["processName"] as? String
-            else {
-                DispatchQueue.main.async { completion(nil) }
-                return
+    private func send(_ request: URLRequest, completion: @escaping (Bool) -> Void) {
+        generation += 1
+        let ticket = generation
+        task?.cancel()
+        task = session.dataTask(with: request) { [weak self] data, response, error in
+            DispatchQueue.main.async {
+                guard let self, self.generation == ticket else { return }
+                let code = (response as? HTTPURLResponse)?.statusCode ?? -1
+                let object = data.flatMap { try? JSONSerialization.jsonObject(with: $0) as? [String: Any] }
+                let failure = object?["error"] as? [String: Any]
+                let value = Self.unwrap(object ?? [:])
+                let accepted = self.config.usesCompanion ? value["acceptedSequence"] != nil : value["ok"] as? Int == 1
+                let ok = error == nil && (200..<300).contains(code) && failure == nil && accepted
+                // Stable error codes only; upstream messages could echo secrets.
+                self.lastError = ok ? nil : (error != nil ? "网络连接失败" : "HTTP \(code) · \(failure?["code"] as? String ?? "响应格式不匹配")")
+                if let acceptedSequence = failure?["acceptedSequence"] as? UInt64 {
+                    self.sequence = max(self.sequence, acceptedSequence)
+                }
+                completion(ok)
             }
-            DispatchQueue.main.async { completion(processName) }
         }
-        task.resume()
+        task?.resume()
+    }
+
+    /// Functions can be raw, enveloped, or wrapped twice after a core upgrade.
+    static func unwrap(_ object: [String: Any]) -> [String: Any] {
+        var value = object
+        for _ in 0..<3 {
+            if let data = value["data"] as? [String: Any] { value = data } else { break }
+        }
+        return value
+    }
+
+    static func remoteName(from object: [String: Any], companion: Bool) -> String? {
+        let value = unwrap(object)
+        if companion {
+            guard let state = value["state"] as? [String: Any], let projection = state["projection"] as? [String: Any],
+                  let expiry = projection["expiresAt"] as? String else { return nil }
+            let formatter = ISO8601DateFormatter()
+            formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            guard let date = formatter.date(from: expiry), date > Date() else { return nil }
+            return (projection["application"] as? [String: Any])?["displayName"] as? String
+        }
+        return value["processName"] as? String ?? value["process_name"] as? String
+            ?? (value["processInfo"] as? [String: Any])?["name"] as? String
+            ?? (value["process_info"] as? [String: Any])?["name"] as? String
+    }
+
+    func fetchRemoteState(completion: @escaping (String?) -> Void) {
+        guard let url = URL(string: config.endpoint + (config.usesCompanion ? "/public" : "")) else { completion(nil); return }
+        var request = URLRequest(url: url)
+        request.httpMethod = config.usesCompanion ? "GET" : "POST"
+        request.cachePolicy = .reloadIgnoringLocalCacheData
+        if !config.usesCompanion {
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            request.httpBody = Data("{}".utf8)
+        }
+        session.dataTask(with: request) { [weak self] data, response, _ in
+            let object = data.flatMap { try? JSONSerialization.jsonObject(with: $0) as? [String: Any] }
+            let name = (response as? HTTPURLResponse)?.statusCode == 200
+                ? object.flatMap { Self.remoteName(from: $0, companion: self?.config.usesCompanion == true) } : nil
+            DispatchQueue.main.async { completion(name) }
+        }.resume()
     }
 }

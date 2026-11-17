@@ -13,6 +13,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private var debounceTimer: Timer?
     private var heartbeatTimer: Timer?
+    private var retryTimer: Timer?
+    private var retryBackoff = RetryBackoff()
     private var paused = false
     private(set) var currentApp: String?
     private(set) var remoteApp: String?
@@ -44,16 +46,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         iconProvider = IconProvider(config: config)
 
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        if let button = statusItem.button {
-            // 菜栏系统图标的视觉密度：12pt 偏细弱、15pt 明显偏大，
-            // 13pt medium 与 Spotlight/控制中心等邻居协调
-            let cfg = NSImage.SymbolConfiguration(pointSize: 13, weight: .medium)
-            let icon = NSImage(systemSymbolName: "bird.fill", accessibilityDescription: "chirp")?
-                .withSymbolConfiguration(cfg)
-            icon?.isTemplate = true
-            button.image = icon
-            button.imageScaling = .scaleProportionallyDown
-        }
+        updateStatusIcon(color: .systemOrange)
         rebuildMenu()
 
         observer.onAppChange = { [weak self] name in
@@ -63,27 +56,72 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             guard let self, let name = self.observer.frontmostName else { return }
             self.reportNow(appName: name, force: true)
         }
+        observer.onSleep = { [weak self] in self?.clearPresence() }
         observer.start()
 
+        startHeartbeat()
+
+        // 启动即上报当前应用
+        if let name = observer.frontmostName {
+            reportNow(appName: name, force: true)
+        }
+    }
+
+    private func startHeartbeat() {
+        heartbeatTimer?.invalidate()
         heartbeatTimer = Timer.scheduledTimer(
-            withTimeInterval: config.heartbeatSeconds,
+            withTimeInterval: config.effectiveHeartbeat,
             repeats: true
         ) { [weak self] _ in
             guard let self, !self.paused, let name = self.observer.frontmostName else { return }
             self.reportNow(appName: name, force: true)
         }
 
-        // 启动即上报当前应用
-        log("launched, frontmost=\(observer.frontmostName ?? "nil") paused=\(paused)")
-        if let name = observer.frontmostName {
-            reportNow(appName: name, force: true)
-        } else {
-            log("frontmost 为空，未上报")
-        }
     }
 
     func applicationWillTerminate(_ notification: Notification) {
         observer.stop()
+    }
+
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        guard config?.usesCompanion == true else { return .terminateNow }
+        paused = true
+        debounceTimer?.invalidate()
+        heartbeatTimer?.invalidate()
+        var replied = false
+        let finish = {
+            guard !replied else { return }
+            replied = true
+            sender.reply(toApplicationShouldTerminate: true)
+        }
+        reporter.clear { _ in finish() }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2, execute: finish)
+        return .terminateLater
+    }
+
+    private func updateStatusIcon(color: NSColor) {
+        let size = NSImage.SymbolConfiguration(pointSize: 13, weight: .medium)
+        let normal = color == NSColor.systemGreen
+        let symbol = NSImage(systemSymbolName: "bird.fill", accessibilityDescription: "chirp：\(lastResult)")
+        let icon = normal
+            ? symbol?.withSymbolConfiguration(size)
+            : symbol?.withSymbolConfiguration(size.applying(NSImage.SymbolConfiguration(paletteColors: [color])))
+        icon?.isTemplate = normal
+        statusItem.button?.image = icon
+        statusItem.button?.imageScaling = .scaleProportionallyDown
+        statusItem.button?.toolTip = "chirp · \(config.backendName) · \(lastResult)"
+    }
+
+    private func clearPresence() {
+        retryTimer?.invalidate()
+        debounceTimer?.invalidate()
+        reporter.clear { [weak self] ok in
+            guard let self else { return }
+            self.remoteApp = nil
+            self.lastResult = ok ? "已暂停" : "清除失败，将在租约到期后离线"
+            self.updateStatusIcon(color: ok ? .systemOrange : .systemRed)
+            self.rebuildMenu()
+        }
     }
 
     // MARK: - 上报
@@ -113,7 +151,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 ? "已上报 \(formatter.string(from: Date()))"
                 : "失败：\(self.reporter.lastError ?? "未知错误")"
             log("report \(appName) ok=\(ok) err=\(self.reporter.lastError ?? "-")")
-            self.statusItem.button?.contentTintColor = ok ? nil : .systemRed
+            self.updateStatusIcon(color: ok ? .systemGreen : .systemRed)
+            self.retryTimer?.invalidate()
+            if ok {
+                self.retryBackoff.reset()
+            } else if !self.paused {
+                self.retryTimer = Timer.scheduledTimer(withTimeInterval: self.retryBackoff.nextDelay(), repeats: false) { [weak self] _ in
+                    guard let self, !self.paused, let name = self.observer.frontmostName else { return }
+                    self.reportNow(appName: name, force: true)
+                }
+            }
             self.rebuildMenu()
             if ok {
                 self.refreshRemoteState()
@@ -122,8 +169,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func refreshRemoteState() {
+        let activeReporter = reporter
         reporter.fetchRemoteState { [weak self] name in
-            guard let self else { return }
+            guard let self, self.reporter === activeReporter, !self.paused else { return }
             self.remoteApp = name
             self.rebuildMenu()
         }
@@ -141,6 +189,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             keyEquivalent: ""
         )
         menu.addItem(title)
+        menu.addItem(NSMenuItem(title: "接入：\(config.backendName)", action: nil, keyEquivalent: ""))
         menu.addItem(.separator())
 
         let appItem = NSMenuItem(
@@ -150,7 +199,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         )
         menu.addItem(appItem)
         let remoteItem = NSMenuItem(
-            title: "博客显示：\(remoteApp ?? "—")",
+            title: "服务端应用：\(remoteApp ?? "—")",
             action: nil,
             keyEquivalent: ""
         )
@@ -223,7 +272,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func togglePause() {
         paused.toggle()
         if paused {
-            debounceTimer?.invalidate()
+            lastResult = "已暂停"
+            updateStatusIcon(color: .systemOrange)
+            clearPresence()
         } else if let name = observer.frontmostName {
             reportNow(appName: name, force: true)
         }
@@ -231,6 +282,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func refreshNow() {
+        retryTimer?.invalidate()
+        retryBackoff.reset()
+        switch Config.loadResult() {
+        case .ok(let updated):
+            reporter.invalidate()
+            config = updated
+            reporter = Reporter(config: updated)
+            iconProvider = IconProvider(config: updated)
+            remoteApp = nil
+            startHeartbeat()
+        case .missing, .corrupted:
+            paused = true
+            debounceTimer?.invalidate()
+            heartbeatTimer?.invalidate()
+            reporter.invalidate()
+            lastResult = "配置无效，请修复后重新刷新"
+            updateStatusIcon(color: .systemRed)
+            rebuildMenu()
+            return
+        }
         if let name = observer.frontmostName, !paused {
             reportNow(appName: name, force: true)
         } else {

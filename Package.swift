@@ -8,6 +8,7 @@ let package = Package(
         .executableTarget(
             name: "chirp",
             path: "Sources/chirp"
-        )
+        ),
+        .testTarget(name: "chirpTests", dependencies: ["chirp"])
     ]
 )

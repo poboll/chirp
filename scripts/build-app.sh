@@ -17,6 +17,7 @@ elif command -v git >/dev/null && git describe --tags >/dev/null 2>&1; then
 else
   VERSION="1.0.0"
 fi
+VERSION="${VERSION#v}"
 STAGING="build/${APP_NAME}"
 
 echo "==> 构建 release 二进制（v${VERSION}）"

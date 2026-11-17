@@ -23,6 +23,7 @@ func iconSlug(_ name: String) -> String {
 final class Observer {
     var onAppChange: ((String) -> Void)?
     var onWake: (() -> Void)?
+    var onSleep: (() -> Void)?
 
     private var observers: [NSObjectProtocol] = []
 
@@ -45,7 +46,10 @@ final class Observer {
         ) { [weak self] _ in
             self?.onWake?()
         }
-        observers = [activate, wake]
+        let sleep = center.addObserver(forName: NSWorkspace.willSleepNotification, object: nil, queue: .main) { [weak self] _ in
+            self?.onSleep?()
+        }
+        observers = [activate, wake, sleep]
     }
 
     func stop() {

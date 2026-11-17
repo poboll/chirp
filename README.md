@@ -1,203 +1,162 @@
 <div align="center">
-
-<img src="assets/icon.png" width="108" alt="chirp. icon">
+<img src="assets/icon.png" width="108" alt="chirp. 图标">
 
 # chirp.
 
-**报信小鸟** —— 把「正在使用的软件」实时汇报给你的博客。
+**报信小鸟，把正在使用的软件带到博客。**
 
-[![Release](https://img.shields.io/github/v/release/poboll/chirp?style=flat-square&label=Release)](https://github.com/poboll/chirp/releases)
+[![Release](https://img.shields.io/github/v/release/poboll/chirp?style=flat-square)](https://github.com/poboll/chirp/releases)
 [![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)](LICENSE)
-[![Swift](https://img.shields.io/badge/Swift-5.9%20·%20AppKit-orange?style=flat-square)](Package.swift)
-[![macOS](https://img.shields.io/badge/macOS-13%2B%20·%20Apple%20Silicon-silver?style=flat-square)](https://poboll.github.io/chirp/)
+[![macOS](https://img.shields.io/badge/macOS-13%2B-silver?style=flat-square)](Package.swift)
 
-[官网](https://poboll.github.io/chirp/) · [下载 Release](https://github.com/poboll/chirp/releases/latest)
+[官网](https://poboll.github.io/chirp/) · [下载](https://github.com/poboll/chirp/releases/latest) · [问题反馈](https://github.com/poboll/chirp/issues)
 
+![chirp 1.2.0 菜单界面示意](assets/menu-preview.svg)
+
+<sub>新版菜单示意；正常图标随系统外观呈白色或黑色。旧版截图见下方。</sub>
 </div>
 
-<div align="center">
+纯 Swift / AppKit，无第三方运行依赖。监听前台应用切换，经过 3 秒防抖后上报；不采集窗口标题、输入内容或屏幕截图。菜单里的“服务端应用”来自接口读回，网页是否显示仍取决于主题配置。
 
-![菜单栏与下拉菜单](assets/menu-shot.png)
+## 先选对接口
 
-<sub>装上之后，菜单栏右侧就是这只小鸟 —— 下拉菜单展示「当前应用 / 博客显示 / 上报状态」。</sub>
+| 博客使用的方案 | chirp 配置 | 心跳 / 有效期 |
+| --- | --- | --- |
+| 新版 mx-core + Yohaku / Live Desk | `/api/v3/companion/presence` + `deviceId` + `deviceToken` | 30 秒 / 90 秒租约 |
+| Shiro / 自建旧活动组件 | `/api/v3/fn/ps/update` + `key` | 默认 240 秒 / 函数缓存 300 秒 |
 
-</div>
+**v1.2.0 新增 Companion v2 支持。v1.1.0 及以前只支持旧云函数。**
 
----
-
-`chirp.` 是一个 macOS 菜单栏应用：监听前台应用切换，实时上报到博客。访客打开你的站点，导航栏就能看到「正在使用 Xcode」。
-
-脱胎于 [Innei](https://github.com/Innei) 的 [ProcessReporter](https://github.com/Innei/ProcessReporter) 与 [mx-space/ProcessReporterMac](https://github.com/mx-space/ProcessReporterMac)，砍到只剩一件事：**报信**。没有 Slack、没有 Discord、没有 S3，一只小鸟就够。
-
-## 特性
-
-- **轻**：纯 AppKit + Swift Package，零第三方依赖，release 二进制约 **250KB**
-- **省**：只在应用切换时上报（3 秒防抖），每 4 分钟心跳续期一次（服务端缓存 5 分钟）
-- **稳**：睡眠唤醒自动补报、失败菜单栏图标变红、`KeepAlive` 常驻
-- **静**：`LSUIElement` 无 Dock 图标，只住菜单栏
-- **带图标**：上报携带应用图标，三层自动回落（见下），新装软件零操作
-
-## 工作方式
+后端升级后会提供内置 Companion 路由，不会替旧客户端创建配对或转换密钥。仅修改 endpoint 无法迁移，旧 `key` 不能作为设备令牌使用。主题需要启用 Live Desk（`module.liveDesk.enable`）。仍使用旧主题时继续选云函数方案。
 
 ```text
-切换应用 ──防抖 3s──▶ POST /api/v3/fn/ps/update
-                        {key, timestamp, process: {name, iconUrl?, iconBase64?}}
-                              │
-                              ▼
-           mx-space 函数（fn snippet）写入缓存 + WebSocket 广播
-                              │
-                              ▼
-               博客导航栏「正在使用 XX」
+应用切换 → chirp → Companion PUT /presence → 90 秒租约 + 实时广播 → Live Desk
+                   或旧云函数 POST ps/update → 缓存 + 广播 → 旧活动组件
 ```
 
-上报内容只有三样：**应用名、图标、时间戳**。没有窗口标题、没有输入内容、没有截屏。
-
----
-
-## 生态与兼容性
-
-chirp 是 [Innei](https://github.com/Innei) 的 **mx-space 生态**中的一块拼图。
-
-### 后端
-
-| 项目 | 说明 | 状态 |
-|---|---|---|
-| [mx-space/core](https://github.com/mx-space/core) | 无头 CMS，NestJS + Fastify + PostgreSQL + Redis，v12 起用 PostgreSQL | 活跃 · AGPLv3 + MIT |
-| [mx-space/api-client](https://github.com/mx-space/api-client) | mx-space RESTful API 的 TypeScript 客户端，Yohaku 的 Companion 调用即出自此 | **已归档** · ★5 |
-
-### 前端 / 主题
-
-| 项目 | 说明 | 状态 |
-|---|---|---|
-| [Innei/Yohaku](https://github.com/Innei/Yohaku) | 余白 —— 排版设计系统 + iOS 客户端，线上实例 [innei.in](https://innei.in) | 活跃 · 设计系统 MIT |
-| [Innei/Shiro](https://github.com/Innei/Shiro) | 极简个人站，纸雪质感，★4k+ | 活跃 · AGPLv3 |
-| **Shiroi**（`innei-dev/Shiroi`） | Yohaku 的上一代付费前端，与 Yohaku 分离、赞助关系独立 | 赞助获取 · 仓库非公开 |
-| [mx-space/kami](https://github.com/mx-space/kami) | 动漫风经典前端 | 维护中（legacy） |
-| [mx-space/mx-admin](https://github.com/mx-space/mx-admin) | 上一代 Vue 3 管理后台 | **已归档**（功能已并入 core） |
-
-Yohaku 由两部分构成：[Innei/Yohaku](https://github.com/Innei/Yohaku) 公开 iOS 客户端（MIT）+ 设计系统（MIT）+ 跨端渲染包；完整 Web 实现在赞助后可访问的仓库中持续维护，需 mx-core v12+。获取方式：通过 [GitHub Sponsors](https://github.com/sponsors/Innei) 赞助后在 [Yohaku Issues](https://github.com/Innei/Yohaku/issues) 提交用户名开通。Shiro、Shiroi、Yohaku 的访问权限与赞助关系相互独立。
-
-### 上报端（chirp 的前辈）
-
-| 项目 | 说明 | 状态 |
-|---|---|---|
-| [Innei/ProcessReporter](https://github.com/Innei/ProcessReporter) | 最初的 macOS 上报器（Swift/AppKit） | **已归档** |
-| [mx-space/ProcessReporterMac](https://github.com/mx-space/ProcessReporterMac) | 为 Shiro 而生的上报器，经服务端 WebSocket 实时推给访客 | 活跃 · MIT |
-| [Innei/reporter-assets](https://github.com/Innei/reporter-assets) | 应用名 → 图标/描述的资源库（约 80 个常用应用，含中文名映射） | 活跃 |
-| [poboll/app-icons](https://github.com/poboll/app-icons) | chirp 自用的图标库（**239 个应用**，jsdelivr CDN，每日刷新） | 活跃 · chirp 维护 |
-
-### 两套「正在使用」机制
-
-生态中存在两代方案，接口不同：
-
-1. **函数订阅式（chirp 采用）**：客户端 POST 到 mx-space Serverless 函数 `/api/v3/fn/ps/update`，函数写入缓存并 WebSocket 广播。只需一个 fn snippet、前端主题消费接口。适用于自建博客、Shiro 时代以及自定义实现。
-2. **mx-core Companion（新一代）**：mx-core 内置 `companion` 模块，路由 `PUT /companion/presence`、`POST /companion/presence/clear`、`GET /companion/presence/public`（schema `yohaku.companion.presence` v2，建议 30 秒心跳、租约 30–120 秒）。Yohaku 的「Live Desk」即消费此接口。
-
-chirp 对接的是方案 1。若使用 Yohaku Live Desk（方案 2），需等 chirp 适配 Companion 协议，或另配中转函数。Shiro 与自建博客用方案 1 即可。
-
----
-
-## 使用
-
-### 方式一：一键安装（推荐）
-
-macOS 13+ · Apple Silicon（arm64）。Intel 版请按方式二自行编译。
-
-先在 mx-space 后台准备好 `ps/update` 函数（见「服务端」或[官网](https://poboll.github.io/chirp/#integration)）：
+可公开检查后端能力：
 
 ```bash
-# 交互式安装：装好后点小鸟 → 打开配置文件（⌘,）填 endpoint 和 key
+curl -fsS https://your-api.example.com/api/v3/companion/capabilities
+curl -fsS https://your-api.example.com/api/v3/companion/presence/public
+```
+
+`presenceSchemaVersions` 包含 `2` 表示后端支持本实现。`projection: null` 表示当前没有有效在线状态，不代表接口缺失。
+
+## 安装
+
+macOS 13+。Release 提供 Apple Silicon 版本；Intel 可自行编译。
+
+```bash
 curl -fsSL https://raw.githubusercontent.com/poboll/chirp/main/scripts/install.sh | bash
-
-# 无人值守：配置以参数注入（密钥只写本机 ~/.config/chirp/config.json，权限 600）
-bash install.sh --endpoint https://your-blog.example.com/api/v3/fn/ps/update --key YOUR_KEY
 ```
 
-安装脚本会：下载最新 Release → 装入 `/Applications` → 写配置（若给参数）→ 配好开机自启并立即启动。
+脚本安装到 `/Applications/chirp.app` 并配置 LaunchAgent。已有配置会保留；首次安装请先按下文准备配置。Release 为 ad-hoc 签名，未做 Apple 公证。
 
-### 方式二：源码构建
+## 新版博客：Companion 配对
 
-1. 配置 `~/.config/chirp/config.json`（权限 600）。最小配置只需两行：
-
-```json
-{
-  "endpoint": "https://your-blog.example.com/api/v3/fn/ps/update",
-  "key": "与 snippet 一致的密钥"
-}
-```
-
-完整模板（官网「配置」节推荐）：
-
-```json
-{
-  "endpoint": "https://your-blog.example.com/api/v3/fn/ps/update",
-  "key": "与 snippet 一致的密钥",
-  "debounceSeconds": 3,
-  "heartbeatSeconds": 240,
-  "iconManifestUrl": "https://fastly.jsdelivr.net/gh/poboll/app-icons@main/manifest.json",
-  "iconBase": "https://fastly.jsdelivr.net/gh/poboll/app-icons@main/icons"
-}
-```
-
-一行写入：
+1. 在博客管理后台的 Companion 设备管理中创建配对码，仅勾选 `companion:presence:write`。接口对应 `POST /api/v3/companion/pairings`，需要站长身份。
+2. 在本仓库运行配对助手，交互输入短期配对码；设备令牌不会输出到终端：
 
 ```bash
-mkdir -p ~/.config/chirp && cat > ~/.config/chirp/config.json <<'EOF'
-{ "endpoint": "https://your-blog.example.com/api/v3/fn/ps/update", "key": "YOUR_KEY" }
-EOF
+git clone https://github.com/poboll/chirp.git
+cd chirp
+python3 scripts/pair-companion.py --api-base https://your-api.example.com/api/v3
+```
+
+助手需要 Python 3；会备份原配置，再以 `0600` 权限写入新配置。也可使用官方配对接口 `POST /companion/pairings/claim`，手动填写结果：
+
+```json
+{
+  "endpoint": "https://your-api.example.com/api/v3/companion/presence",
+  "deviceId": "配对返回的 UUID",
+  "deviceToken": "配对返回的设备令牌"
+}
+```
+
+3. 点小鸟 → **立即刷新（⌘R）**，重读配置并上报。菜单显示已上报、服务端应用与当前应用一致后，再打开博客确认 Live Desk。需要时在主题配置开启 `module.liveDesk.enable`。
+
+Companion 使用 schema `yohaku.companion.presence` v2，发送协议兼容头 `x-yohaku-companion-version: 1.7.3`。这是上游协议兼容级别，与 chirp 版本号分别管理。设备令牌仅授权前台应用状态；无需把站长 API key 放入 chirp。
+
+## 旧博客：云函数
+
+在 mx-space 后台创建 POST 函数 `ps/update`。读分支接收空对象，写分支验证 `key`，写缓存并广播 `ps-update`。完整示例见[旧版接入文档](https://poboll.github.io/chirp/#legacy)。升级后若函数返回 500，应检查云函数运行环境，或随新主题迁移至 Companion。
+
+`~/.config/chirp/config.json`：
+
+```json
+{
+  "endpoint": "https://your-api.example.com/api/v3/fn/ps/update",
+  "key": "与服务端函数一致的密钥"
+}
+```
+
+```bash
 chmod 600 ~/.config/chirp/config.json
+curl -fsS -X POST -H 'Content-Type: application/json' \
+  -d '{}' https://your-api.example.com/api/v3/fn/ps/update
 ```
 
-| 字段 | 默认 | 说明 |
-|---|---|---|
-| `endpoint` | 必填 | `ps/update` 函数完整地址，含 `/api/v3/fn/` 前缀 |
-| `key` | 必填 | 与 snippet 内 `AUTH_KEY` 一致；不一致一律 401 |
-| `debounceSeconds` | `3` | 切换应用后延迟上报，避免快速切换刷屏 |
-| `heartbeatSeconds` | `240` | 心跳续期；服务端缓存 300 秒，须小于它 |
-| `iconManifestUrl` | app-icons CDN | 应用名 → 图标清单，默认指向 [poboll/app-icons](https://github.com/poboll/app-icons) |
-| `iconBase` | app-icons CDN | 图标 URL 前缀；未命中回落内嵌 data URI |
+旧模式写入格式：`{key, timestamp, process:{name, iconUrl?, iconBase64?}}`；`timestamp` 为毫秒。读取兼容原始对象及 `{data:…}` 包裹。只有收到成功确认才显示“已上报”。
 
-配置损坏时 chirp 不会覆盖文件，仅在菜单栏提示错误。`iconManifestUrl` / `iconBase` 可替换为自定义图标库，格式见 app-icons 的 `manifest.json`。
+## 菜单与配置
 
-2. 构建安装：
+| 外观 / 操作 | 含义 |
+| --- | --- |
+| 系统单色小鸟 | 最近一次上报得到服务端确认 |
+| 橙色小鸟 | 等待首次上报或已暂停 |
+| 红色小鸟 | 上报、配置或清除状态失败；展开菜单查看原因 |
+| ⌘P | 暂停 / 继续；Companion 暂停会立即清除在线状态 |
+| ⌘R | 重读配置并刷新 |
+| ⌘, | 在 Finder 定位配置文件 |
+| ⌘H | 打开官网 |
+| ⌘Q | 正常退出；不会被 LaunchAgent 立即拉起 |
 
-```bash
-sh scripts/build-app.sh            # 构建 + 组装 + 安装到 /Applications
-sh scripts/install-launch-agent.sh # 开机自启动 + 立即运行
-```
+旧版本的小鸟使用系统模板色，在浅色菜单栏显示黑色是正常外观，**不能据颜色判断上报成功**。v1.2.0 正常时使用系统单色（深色菜单栏为白色），暂停和失败仍有状态提示。
 
-菜单栏小鸟：单击查看「当前应用 / 博客显示 / 上次上报结果」。`⌘P` 暂停，`⌘R` 立即刷新，`⌘,` 打开配置，`⌘H` 使用说明（[官网](https://poboll.github.io/chirp/)）。
+| 可选字段 | 默认 / 约束 |
+| --- | --- |
+| `debounceSeconds` | `3`；须 ≥ 0 |
+| `heartbeatSeconds` | 旧模式 `240`，须 < 300；Companion 默认 `30`，较大值自动压至 30 |
+| `iconManifestUrl` | `https://fastly.jsdelivr.net/gh/poboll/app-icons@main/manifest.json` |
+| `iconBase` | `https://fastly.jsdelivr.net/gh/poboll/app-icons@main/icons` |
 
-### 服务端：一个 `ps/update` 函数
+所有可选字段可以省略。配置格式错误时保留原文件；刷新发现无效配置会暂停上报。修复后刷新，再选择继续上报。
 
-在 mx-space 后台 → Serverless 函数 → 新建，路径 `ps/update`、Method **POST**。逻辑：校验 key → 写缓存 → 应用名变化时广播。完整 snippet（含读分支、缓存 TTL、WebSocket 广播）见[官网接入文档](https://poboll.github.io/chirp/#integration)，请求体 `{key, process:{name, iconUrl?, iconBase64?}}`。
+应用图标优先从 [app-icons](https://github.com/poboll/app-icons) CDN 清单匹配；旧模式未命中时使用本机图标的 data URI。Companion 只接受 HTTPS 图标，未命中时仅上报应用名，主题也可使用自己的映射。**菜单栏的小鸟**与**博客中的应用图标**是两类图标。
 
-## 图标从哪来
+Companion 在暂停、睡眠与正常退出时发送清除请求；断网或强制退出时最迟等 90 秒租约失效。旧云函数模式停止上报后等待函数缓存到期，不发送清除。
 
-前端「正在使用」的应用图标按三层回落，无需手动配置：
+失败后自动按 5、10、20、40、60 秒退避重试，成功后重置；暂停会取消待执行重试。正常心跳独立运行，每次也会尝试续期。
 
-1. **主题内置映射**：生态通用的 [Innei/reporter-assets](https://github.com/Innei/reporter-assets)（Xcode、VS Code 等常见开发软件，含中文应用名）；
-2. **app-icons CDN**：按 [poboll/app-icons](https://github.com/poboll/app-icons) 的 `manifest.json` 将应用名映射为 jsdelivr CDN 图标（约 240 个常见 macOS 应用，manifest 每日自动刷新）；
-3. **data URI 兜底**：两者都未命中时，直接抓取本机应用图标内嵌上报。新装软件立即可用，入 app-icons 仓库后自动切换为 CDN 轻量模式。
+<details><summary>查看 v1.1.0 历史截图</summary>
 
-扩充 CDN 图标库：`swift scripts/ExportIcons.swift` 导出本机图标与 manifest，向 app-icons 仓库提 PR。
+![v1.1.0 历史界面](assets/menu-shot.png)
+
+</details>
+
+## 排查
+
+- **401 / DEVICE_REVOKED**：检查使用的是新设备令牌还是旧 key；被撤销的设备需重新配对。
+- **404**：核对域名与 `/api/v3` 前缀。旧函数常只注册 POST，直接 GET 并非有效读法。
+- **426**：协议版本不兼容，先检查 capabilities 与客户端版本。
+- **500**：服务端执行失败，检查服务端日志；不要反复更换本机图标或密钥。
+- **菜单已成功、网页没变化**：先确认服务端读回；新主题须启用 Live Desk，旧活动组件只读旧函数。
+- **Companion 有名称、没有图标**：图标必须是 HTTPS URL，内嵌 Base64 不在新版协议范围内。
 
 ## 开发
 
 ```bash
-swift build            # 构建
-swift run              # 本地跑
-swift scripts/IconGen.swift build/AppIcon.iconset  # 重新生成圆角图标
+swift test
+CHIRP_VERSION=1.2.0 bash scripts/build-app.sh --dist  # 仅打包
+CHIRP_VERSION=1.2.0 bash scripts/build-app.sh         # 本机安装
+bash scripts/install-launch-agent.sh
 ```
 
-图标遵循新版 macOS 标准：超椭圆（squircle）圆角矩形、约 10% 内边距、鼠尾草绿渐变 + 白色 `bird.fill` 剪影。
+`build/`、`.build/`、`dist/` 为本地构建产物。签名、配对及应用切换验收见 [2026-11-12 记录](docs/verification-2026-11-12.md)。
 
-## 致谢
+## 致谢与许可
 
-- [Innei](https://github.com/Innei) —— [mx-space](https://github.com/mx-space) 生态、[Shiro](https://github.com/Innei/Shiro) 与 [Yohaku](https://github.com/Innei/Yohaku)、以及 [ProcessReporter](https://github.com/Innei/ProcessReporter)：原始创意、`ps/update` 契约与图标资源
-- [mx-space/ProcessReporterMac](https://github.com/mx-space/ProcessReporterMac)（MIT）—— 上报器的直系祖先，chirp 的极简版蓝本
-- [Innei/reporter-assets](https://github.com/Innei/reporter-assets) —— 应用图标与中文名映射
+灵感和旧协议来自 [Innei/ProcessReporter](https://github.com/Innei/ProcessReporter) 与 [mx-space/ProcessReporterMac](https://github.com/mx-space/ProcessReporterMac)。新版协议遵循 [mx-space/core Companion](https://github.com/mx-space/core/tree/master/apps/core/src/modules/companion)，前端见 [Yohaku](https://github.com/Innei/Yohaku)。
 
-## License
-
-MIT
+chirp 为独立项目，采用 [MIT](LICENSE) 许可。

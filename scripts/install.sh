@@ -77,7 +77,7 @@ cat > "$LAUNCH_AGENT" <<PLIST
   <key>ProgramArguments</key>
   <array><string>/Applications/chirp.app/Contents/MacOS/chirp</string></array>
   <key>RunAtLoad</key><true/>
-  <key>KeepAlive</key><true/>
+  <key>KeepAlive</key><dict><key>SuccessfulExit</key><false/></dict>
 </dict>
 </plist>
 PLIST

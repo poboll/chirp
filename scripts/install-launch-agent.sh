@@ -22,7 +22,7 @@ cat > "$PLIST" <<PLIST
     <string>${APP}/Contents/MacOS/chirp</string>
   </array>
   <key>RunAtLoad</key><true/>
-  <key>KeepAlive</key><true/>
+  <key>KeepAlive</key><dict><key>SuccessfulExit</key><false/></dict>
   <key>ProcessType</key><string>Background</string>
 </dict>
 </plist>
