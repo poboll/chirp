@@ -9,11 +9,10 @@
 [![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)](LICENSE)
 [![macOS](https://img.shields.io/badge/macOS-13%2B-silver?style=flat-square)](Package.swift)
 
-[官网](https://poboll.github.io/chirp/) · [下载](https://github.com/poboll/chirp/releases/latest) · [问题反馈](https://github.com/poboll/chirp/issues)
+[官网](https://chirp.caiths.com/) · [下载](https://github.com/poboll/chirp/releases/latest) · [问题反馈](https://github.com/poboll/chirp/issues)
 
-![chirp 1.2.0 菜单界面示意](assets/menu-preview.svg)
+![chirp 菜单栏与下拉菜单](assets/menu-shot.png)
 
-<sub>新版菜单示意；正常图标随系统外观呈白色或黑色。旧版截图见下方。</sub>
 </div>
 
 纯 Swift / AppKit，无第三方运行依赖。监听前台应用切换，经过 3 秒防抖后上报；不采集窗口标题、输入内容或屏幕截图。菜单里的“服务端应用”来自接口读回，网页是否显示仍取决于主题配置。
@@ -80,7 +79,7 @@ Companion 使用 schema `yohaku.companion.presence` v2，发送协议兼容头 `
 
 ## 旧博客：云函数
 
-在 mx-space 后台创建 POST 函数 `ps/update`。读分支接收空对象，写分支验证 `key`，写缓存并广播 `ps-update`。完整示例见[旧版接入文档](https://poboll.github.io/chirp/#legacy)。升级后若函数返回 500，应检查云函数运行环境，或随新主题迁移至 Companion。
+在 mx-space 后台创建 POST 函数 `ps/update`。读分支接收空对象，写分支验证 `key`，写缓存并广播 `ps-update`。完整示例见[旧版接入文档](https://chirp.caiths.com/#legacy)。升级后若函数返回 500，应检查云函数运行环境，或随新主题迁移至 Companion。
 
 `~/.config/chirp/config.json`：
 
@@ -112,7 +111,6 @@ curl -fsS -X POST -H 'Content-Type: application/json' \
 | ⌘H | 打开官网 |
 | ⌘Q | 正常退出；不会被 LaunchAgent 立即拉起 |
 
-旧版本的小鸟使用系统模板色，在浅色菜单栏显示黑色是正常外观，**不能据颜色判断上报成功**。v1.2.0 正常时使用系统单色（深色菜单栏为白色），暂停和失败仍有状态提示。
 
 | 可选字段 | 默认 / 约束 |
 | --- | --- |
@@ -129,11 +127,7 @@ Companion 在暂停、睡眠与正常退出时发送清除请求；断网或强�
 
 失败后自动按 5、10、20、40、60 秒退避重试，成功后重置；暂停会取消待执行重试。正常心跳独立运行，每次也会尝试续期。
 
-<details><summary>查看 v1.1.0 历史截图</summary>
 
-![v1.1.0 历史界面](assets/menu-shot.png)
-
-</details>
 
 ## 排查
 
