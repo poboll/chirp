@@ -7,11 +7,11 @@
 <meta name="description" content="macOS 菜单栏小鸟：把你正在使用的软件实时报到博客。纯 AppKit，零依赖，支持新版 Companion 与旧云函数。">
 <meta property="og:title" content="chirp. — 菜单栏的报信小鸟">
 <meta property="og:description" content="macOS 菜单栏小鸟：把你正在使用的软件实时报到博客。纯 AppKit，支持 Companion v2 与旧云函数。">
-<meta property="og:image" content="https://poboll.github.io/chirp/og.png">
+<meta property="og:image" content="https://chirp.caiths.com/og.png">
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="https://poboll.github.io/chirp/og.png">
-<link rel="canonical" href="https://poboll.github.io/chirp/">
+<meta name="twitter:image" content="https://chirp.caiths.com/og.png">
+<link rel="canonical" href="https://chirp.caiths.com/">
 <link rel="icon" href="favicon.ico" sizes="16x16 32x32 48x48 64x64 128x128 256x256">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
@@ -179,8 +179,7 @@ footer .up{color:var(--dim)}
 </header>
 
 <figure class="shot wrap r r5">
-  <img class="real-shot" src="assets/menu-preview.svg" alt="chirp 1.2.0 菜单界面示意：Companion 接入、当前应用、服务端应用和上报状态" width="900" height="540">
-  <figcaption class="cap">v1.2.0 界面示意 · 非实时状态 · <a href="assets/menu-shot.png">查看 v1.1.0 历史截图</a></figcaption>
+  <img class="real-shot" src="assets/menu-shot.png" alt="chirp 菜单栏与下拉菜单" width="880" height="424">
 </figure>
 
 <section id="features">
@@ -372,12 +371,12 @@ async function POST(ctx: Context) {
 }</pre></div></div></div>
 <p style="margin:20px 0"><code>chmod 600 ~/.config/chirp/config.json</code>。可选 <code>debounceSeconds</code> 默认 3，<code>heartbeatSeconds</code> 旧版默认 240、新版默认 30；新版较大值自动压至 30。</p>
 <div class="tiers"><div class="tier"><div class="n">白色 / 系统单色</div><h4>上报确认</h4><p>最近一次上报得到服务端确认。展开菜单比较当前应用与服务端应用。</p></div><div class="tier"><div class="n">橙色</div><h4>等待或暂停</h4><p>等待首次上报，或你已暂停。⌘P 继续上报；⌘Q 正常退出。</p></div><div class="tier"><div class="n">红色</div><h4>展开查看原因</h4><p>401 检查配对凭据；404 检查路径；426 检查协议；500 检查服务端日志。</p></div></div>
-<p style="margin-top:24px">旧版黑色小鸟来自 macOS 模板色，在浅色菜单栏属正常外观，不能据此判断上报成功。v1.2.0 正常时仍为系统单色，深色菜单栏为白色；暂停与失败保留状态提示。更多说明见 <a href="https://github.com/poboll/chirp#readme">README</a>。</p></div></section>
+</div></section>
 
 <footer>
   <div class="wrap">
     <div>chirp. — 灵感来自 Innei 的 <a href="https://github.com/Innei/ProcessReporter" target="_blank" rel="noopener">ProcessReporter</a> · MIT License</div>
-    <div class="up">updated 2026-11-17 · v1.2.0</div>
+    <div class="up">updated 2026-11-26 · v1.2.0</div>
     <div><a href="https://github.com/poboll" target="_blank" rel="noopener">poboll</a> · <a href="https://blog.caiths.com" target="_blank" rel="noopener">blog.caiths.com</a></div>
   </div>
 </footer>
